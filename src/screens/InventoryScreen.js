@@ -4,15 +4,17 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 
 import { EggContext } from '../EggContext';
 
 export default function InventoryScreen() {
-  const {
-    inventory,
-    thresholds,
-  } = useContext(EggContext);
+  const { inventory, thresholds } = useContext(EggContext);
+
+  // =========================
+  // TOTAL INVENTORY
+  // =========================
 
   const totalEggs =
     inventory.pullet +
@@ -24,6 +26,41 @@ export default function InventoryScreen() {
 
   const completeTrays = Math.floor(totalEggs / 30);
   const looseEggs = totalEggs % 30;
+
+  // =========================
+  // EGG SIZE DATA
+  // =========================
+
+  const eggSizes = [
+    {
+      key: 'pullet',
+      label: 'Pullet',
+    },
+    {
+      key: 'small',
+      label: 'Small',
+    },
+    {
+      key: 'medium',
+      label: 'Medium',
+    },
+    {
+      key: 'large',
+      label: 'Large',
+    },
+    {
+      key: 'xlarge',
+      label: 'X-Large',
+    },
+    {
+      key: 'jumbo',
+      label: 'Jumbo',
+    },
+  ];
+
+  // =========================
+  // STATUS
+  // =========================
 
   const getStatus = (quantity, threshold) => {
     if (quantity <= threshold) {
@@ -42,269 +79,277 @@ export default function InventoryScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
+    <ImageBackground
+      source={{
+        uri: 'https://img.freepik.com/premium-photo/side-profile-chicken-against-pink-background-concept-animal-photography-still-life-pink-backgrounds_864588-56895.jpg',
+      }}
+      style={styles.background}
+      imageStyle={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      {/* LIGHT OVERLAY */}
+      <View style={styles.overlay}>
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* =========================
+              HEADER
+          ========================= */}
 
-        <Text style={styles.title}>
-          Egg Inventory
-        </Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              Egg Inventory
+            </Text>
 
-        <Text style={styles.description}>
-          Monitor current egg stock and individual low-stock thresholds.
-        </Text>
+            <Text style={styles.subtitle}>
+              Monitor current egg stock and individual
+              low-stock thresholds.
+            </Text>
+          </View>
 
-        <View style={styles.totalCard}>
+          {/* =========================
+              INVENTORY OVERVIEW
+          ========================= */}
 
-          <Text style={styles.totalLabel}>
-            Total Eggs
+          <Text style={styles.sectionTitle}>
+            Inventory Overview
           </Text>
 
-          <Text style={styles.totalValue}>
-            {totalEggs}
-          </Text>
+          <View style={styles.totalCard}>
+            <Text style={styles.totalLabel}>
+              Total Eggs
+            </Text>
 
-          <Text style={styles.totalUnit}>
-            eggs
-          </Text>
+            <Text style={styles.totalValue}>
+              {totalEggs}
+            </Text>
 
-        </View>
+            <Text style={styles.totalUnit}>
+              eggs currently in inventory
+            </Text>
+          </View>
 
-        <View style={styles.infoCard}>
+          {/* =========================
+              STORAGE SUMMARY
+          ========================= */}
 
-          <Text style={styles.infoTitle}>
+          <Text style={styles.sectionTitle}>
             Storage Summary
           </Text>
 
-          <Text style={styles.infoText}>
-            Complete Trays: {completeTrays}
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>
+                Complete Trays
+              </Text>
+
+              <Text style={styles.infoValue}>
+                {completeTrays}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>
+                Loose Eggs
+              </Text>
+
+              <Text style={styles.infoValue}>
+                {looseEggs}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.infoRow,
+                styles.lastInfoRow,
+              ]}
+            >
+              <Text style={styles.infoLabel}>
+                Eggs per Tray
+              </Text>
+
+              <Text style={styles.infoValue}>
+                30
+              </Text>
+            </View>
+          </View>
+
+          {/* =========================
+              INVENTORY BY SIZE
+          ========================= */}
+
+          <Text style={styles.sectionTitle}>
+            Inventory by Size
           </Text>
 
-          <Text style={styles.infoText}>
-            Loose Eggs: {looseEggs}
-          </Text>
+          <View style={styles.sizeCard}>
+            {eggSizes.map((egg, index) => {
+              const quantity = inventory[egg.key];
+              const threshold = thresholds[egg.key];
 
-        </View>
+              const isLowStock = quantity <= threshold;
 
-        <Text style={styles.sectionTitle}>
-          Inventory by Size
-        </Text>
+              return (
+                <View
+                  key={egg.key}
+                  style={[
+                    styles.sizeItem,
+                    index === eggSizes.length - 1 &&
+                      styles.lastSizeItem,
+                  ]}
+                >
+                  {/* SIZE HEADER */}
 
-        <View style={styles.sizeCard}>
+                  <View style={styles.sizeHeader}>
+                    <Text style={styles.sizeName}>
+                      {egg.label}
+                    </Text>
 
-          <View style={styles.sizeItem}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        isLowStock &&
+                          styles.lowStockBadge,
+                      ]}
+                    >
+                      <Text
+                        style={getStatusStyle(
+                          quantity,
+                          threshold
+                        )}
+                      >
+                        {getStatus(
+                          quantity,
+                          threshold
+                        )}
+                      </Text>
+                    </View>
+                  </View>
 
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Pullet
-              </Text>
+                  {/* QUANTITY */}
 
-              <Text
-                style={getStatusStyle(
-                  inventory.pullet,
-                  thresholds.pullet
-                )}
-              >
-                {getStatus(
-                  inventory.pullet,
-                  thresholds.pullet
-                )}
-              </Text>
-            </View>
+                  <Text style={styles.quantity}>
+                    {quantity} eggs
+                  </Text>
 
-            <Text style={styles.quantity}>
-              {inventory.pullet} eggs
-            </Text>
+                  {/* THRESHOLD */}
 
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.pullet}
-            </Text>
-
+                  <Text style={styles.threshold}>
+                    Low-stock threshold: {threshold}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
 
-          <View style={styles.sizeItem}>
+          {/* BOTTOM SPACE */}
 
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Small
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.small,
-                  thresholds.small
-                )}
-              >
-                {getStatus(
-                  inventory.small,
-                  thresholds.small
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.small} eggs
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.small}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Medium
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.medium,
-                  thresholds.medium
-                )}
-              >
-                {getStatus(
-                  inventory.medium,
-                  thresholds.medium
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.medium} eggs
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.medium}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Large
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.large,
-                  thresholds.large
-                )}
-              >
-                {getStatus(
-                  inventory.large,
-                  thresholds.large
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.large} eggs
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.large}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                X-Large
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.xlarge,
-                  thresholds.xlarge
-                )}
-              >
-                {getStatus(
-                  inventory.xlarge,
-                  thresholds.xlarge
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.xlarge} eggs
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.xlarge}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Jumbo
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.jumbo,
-                  thresholds.jumbo
-                )}
-              >
-                {getStatus(
-                  inventory.jumbo,
-                  thresholds.jumbo
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.jumbo} eggs
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.jumbo}
-            </Text>
-
-          </View>
-
-        </View>
-
+          <View style={styles.bottomSpace} />
+        </ScrollView>
       </View>
-    </ScrollView>
+    </ImageBackground>
   );
 }
 
+// =====================================================
+// STYLES
+// =====================================================
+
 const styles = StyleSheet.create({
-  container: {
+  // =========================
+  // BACKGROUND
+  // =========================
+
+  background: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
   },
 
-  content: {
-    padding: 20,
+  backgroundImage: {
+    opacity: 0.75,
+    resizeMode: 'cover',
+    alignSelf: 'center',
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(245, 247, 250, 0.35)',
+  },
+
+  // =========================
+  // CONTAINER
+  // =========================
+
+  container: {
+    flex: 1,
+  },
+
+  // =========================
+  // HEADER
+  // =========================
+
+  header: {
+    backgroundColor: 'rgba(255, 255, 255, 0.90)',
+
+    paddingHorizontal: 20,
+    paddingTop: 25,
+    paddingBottom: 22,
+
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+
+    elevation: 2,
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 30,
     fontWeight: 'bold',
+    color: '#1F2937',
   },
 
-  description: {
+  subtitle: {
     fontSize: 14,
     color: '#6B7280',
     marginTop: 5,
-    marginBottom: 25,
+    lineHeight: 20,
   },
 
+  // =========================
+  // SECTION TITLE
+  // =========================
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+
+    marginHorizontal: 20,
+    marginTop: 25,
+    marginBottom: 10,
+  },
+
+  // =========================
+  // TOTAL CARD
+  // =========================
+
   totalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+
+    marginHorizontal: 20,
     padding: 20,
-    borderRadius: 12,
-    elevation: 2,
+
+    borderRadius: 14,
+
+    elevation: 3,
+
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
   },
 
   totalLabel: {
@@ -313,57 +358,115 @@ const styles = StyleSheet.create({
   },
 
   totalValue: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: 'bold',
+    color: '#1F2937',
+
     marginTop: 5,
   },
 
   totalUnit: {
     fontSize: 13,
     color: '#9CA3AF',
+
+    marginTop: 2,
   },
+
+  // =========================
+  // STORAGE SUMMARY
+  // =========================
 
   infoCard: {
-    backgroundColor: '#FFFFFF',
-    marginTop: 15,
-    padding: 20,
-    borderRadius: 12,
-    elevation: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+
+    marginHorizontal: 20,
+    padding: 10,
+
+    borderRadius: 14,
+
+    elevation: 3,
+
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
   },
 
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
+  infoRow: {
+    flexDirection: 'row',
 
-  infoText: {
-    fontSize: 16,
-    marginVertical: 4,
-  },
+    justifyContent: 'space-between',
+    alignItems: 'center',
 
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 30,
-    marginBottom: 10,
-  },
+    paddingVertical: 13,
+    paddingHorizontal: 10,
 
-  sizeCard: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 15,
-    borderRadius: 12,
-    elevation: 2,
-  },
-
-  sizeItem: {
-    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
 
+  lastInfoRow: {
+    borderBottomWidth: 0,
+  },
+
+  infoLabel: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#374151',
+  },
+
+  infoValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2563EB',
+  },
+
+  // =========================
+  // INVENTORY SIZE CARD
+  // =========================
+
+  sizeCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+
+    marginHorizontal: 20,
+    paddingHorizontal: 15,
+
+    borderRadius: 14,
+
+    elevation: 3,
+
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+  },
+
+  // =========================
+  // SIZE ITEM
+  // =========================
+
+  sizeItem: {
+    paddingVertical: 17,
+
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+
+  lastSizeItem: {
+    borderBottomWidth: 0,
+  },
+
   sizeHeader: {
     flexDirection: 'row',
+
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -371,27 +474,69 @@ const styles = StyleSheet.create({
   sizeName: {
     fontSize: 17,
     fontWeight: 'bold',
+
+    color: '#1F2937',
   },
 
-  quantity: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 8,
+  // =========================
+  // STATUS BADGE
+  // =========================
+
+  statusBadge: {
+    backgroundColor: '#DCFCE7',
+
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+
+    borderRadius: 20,
   },
 
-  threshold: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 4,
+  lowStockBadge: {
+    backgroundColor: '#FEF3C7',
   },
 
   normalStock: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
+    color: '#16A34A',
   },
 
   lowStock: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
+    color: '#D97706',
+  },
+
+  // =========================
+  // QUANTITY
+  // =========================
+
+  quantity: {
+    fontSize: 22,
+    fontWeight: 'bold',
+
+    color: '#2563EB',
+
+    marginTop: 10,
+  },
+
+  // =========================
+  // THRESHOLD
+  // =========================
+
+  threshold: {
+    fontSize: 13,
+
+    color: '#6B7280',
+
+    marginTop: 4,
+  },
+
+  // =========================
+  // BOTTOM SPACE
+  // =========================
+
+  bottomSpace: {
+    height: 35,
   },
 });

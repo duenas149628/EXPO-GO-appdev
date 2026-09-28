@@ -1,10 +1,10 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   ScrollView,
+  TextInput,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -17,306 +17,437 @@ export default function SettingsScreen() {
     updateThreshold,
   } = useContext(EggContext);
 
-  const [pullet, setPullet] = useState(
-    String(thresholds.pullet)
-  );
+  const [values, setValues] = React.useState({
+    pullet: String(thresholds.pullet),
+    small: String(thresholds.small),
+    medium: String(thresholds.medium),
+    large: String(thresholds.large),
+    xlarge: String(thresholds.xlarge),
+    jumbo: String(thresholds.jumbo),
+  });
 
-  const [small, setSmall] = useState(
-    String(thresholds.small)
-  );
+  const handleChange = (size, value) => {
+    // Only allow numbers
+    const cleanedValue = value.replace(/[^0-9]/g, '');
 
-  const [medium, setMedium] = useState(
-    String(thresholds.medium)
-  );
-
-  const [large, setLarge] = useState(
-    String(thresholds.large)
-  );
-
-  const [xlarge, setXlarge] = useState(
-    String(thresholds.xlarge)
-  );
-
-  const [jumbo, setJumbo] = useState(
-    String(thresholds.jumbo)
-  );
+    setValues(previous => ({
+      ...previous,
+      [size]: cleanedValue,
+    }));
+  };
 
   const handleSave = () => {
-    const values = [
-      pullet,
-      small,
-      medium,
-      large,
-      xlarge,
-      jumbo,
+    const sizes = [
+      'pullet',
+      'small',
+      'medium',
+      'large',
+      'xlarge',
+      'jumbo',
     ];
 
-    const hasInvalidValue = values.some(
-      value =>
-        value.trim() === '' ||
-        Number(value) < 0 ||
-        !Number.isInteger(Number(value))
-    );
+    for (const size of sizes) {
+      const value = values[size].trim();
 
-    if (hasInvalidValue) {
-      Alert.alert(
-        'Invalid Threshold',
-        'Please enter a whole number that is 0 or greater for every egg size.'
-      );
+      if (value === '') {
+        Alert.alert(
+          'Invalid Threshold',
+          'Please enter a threshold for every egg size.'
+        );
+        return;
+      }
 
-      return;
+      const numberValue = Number(value);
+
+      if (
+        !Number.isInteger(numberValue) ||
+        numberValue < 0
+      ) {
+        Alert.alert(
+          'Invalid Threshold',
+          'Threshold values must be whole numbers that are 0 or greater.'
+        );
+        return;
+      }
     }
 
-    updateThreshold('pullet', Number(pullet));
-    updateThreshold('small', Number(small));
-    updateThreshold('medium', Number(medium));
-    updateThreshold('large', Number(large));
-    updateThreshold('xlarge', Number(xlarge));
-    updateThreshold('jumbo', Number(jumbo));
+    sizes.forEach(size => {
+      updateThreshold(size, Number(values[size]));
+    });
 
     Alert.alert(
       'Settings Saved',
-      'Low-stock thresholds have been updated.'
+      'Low-stock thresholds have been updated successfully.'
+    );
+  };
+
+  const renderThresholdInput = (
+    label,
+    size
+  ) => {
+    return (
+      <View style={styles.settingCard}>
+
+        <View style={styles.settingHeader}>
+
+          <Text style={styles.sizeName}>
+            {label}
+          </Text>
+
+          <Text style={styles.unit}>
+            eggs
+          </Text>
+
+        </View>
+
+        <Text style={styles.inputLabel}>
+          Low-stock threshold
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          value={values[size]}
+          onChangeText={value =>
+            handleChange(size, value)
+          }
+          keyboardType="numeric"
+          placeholder="0"
+          maxLength={5}
+        />
+
+        <Text style={styles.helpText}>
+          A warning will appear when {label} stock
+          reaches this amount or lower.
+        </Text>
+
+      </View>
     );
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+
+      {/* =========================
+          HEADER
+      ========================= */}
+
+      <View style={styles.header}>
 
         <Text style={styles.title}>
           Settings
         </Text>
 
         <Text style={styles.description}>
-          Configure the minimum inventory level for each egg size.
+          Configure your EggTrack inventory settings.
         </Text>
-
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>
-            Low-Stock Thresholds
-          </Text>
-
-          <Text style={styles.infoText}>
-            The Dashboard will show a warning when an egg size reaches or falls below its configured threshold.
-          </Text>
-        </View>
-
-        <Text style={styles.sectionTitle}>
-          Egg Size Thresholds
-        </Text>
-
-        <Text style={styles.label}>
-          Pullet
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          value={pullet}
-          onChangeText={setPullet}
-          keyboardType="numeric"
-          placeholder="Enter threshold"
-        />
-
-        <Text style={styles.label}>
-          Small
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          value={small}
-          onChangeText={setSmall}
-          keyboardType="numeric"
-          placeholder="Enter threshold"
-        />
-
-        <Text style={styles.label}>
-          Medium
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          value={medium}
-          onChangeText={setMedium}
-          keyboardType="numeric"
-          placeholder="Enter threshold"
-        />
-
-        <Text style={styles.label}>
-          Large
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          value={large}
-          onChangeText={setLarge}
-          keyboardType="numeric"
-          placeholder="Enter threshold"
-        />
-
-        <Text style={styles.label}>
-          X-Large
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          value={xlarge}
-          onChangeText={setXlarge}
-          keyboardType="numeric"
-          placeholder="Enter threshold"
-        />
-
-        <Text style={styles.label}>
-          Jumbo
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          value={jumbo}
-          onChangeText={setJumbo}
-          keyboardType="numeric"
-          placeholder="Enter threshold"
-        />
-
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleSave}
-        >
-          <Text style={styles.saveButtonText}>
-            Save Thresholds
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.currentCard}>
-          <Text style={styles.currentTitle}>
-            Current Thresholds
-          </Text>
-
-          <Text style={styles.currentText}>
-            Pullet: {thresholds.pullet}
-          </Text>
-
-          <Text style={styles.currentText}>
-            Small: {thresholds.small}
-          </Text>
-
-          <Text style={styles.currentText}>
-            Medium: {thresholds.medium}
-          </Text>
-
-          <Text style={styles.currentText}>
-            Large: {thresholds.large}
-          </Text>
-
-          <Text style={styles.currentText}>
-            X-Large: {thresholds.xlarge}
-          </Text>
-
-          <Text style={styles.currentText}>
-            Jumbo: {thresholds.jumbo}
-          </Text>
-        </View>
 
       </View>
+
+      {/* =========================
+          STOCK SETTINGS
+      ========================= */}
+
+      <Text style={styles.sectionTitle}>
+        Low-Stock Thresholds
+      </Text>
+
+      <Text style={styles.sectionDescription}>
+        Set the minimum number of eggs allowed for
+        each egg size before a low-stock warning
+        appears.
+      </Text>
+
+      {renderThresholdInput(
+        'Pullet',
+        'pullet'
+      )}
+
+      {renderThresholdInput(
+        'Small',
+        'small'
+      )}
+
+      {renderThresholdInput(
+        'Medium',
+        'medium'
+      )}
+
+      {renderThresholdInput(
+        'Large',
+        'large'
+      )}
+
+      {renderThresholdInput(
+        'X-Large',
+        'xlarge'
+      )}
+
+      {renderThresholdInput(
+        'Jumbo',
+        'jumbo'
+      )}
+
+      {/* =========================
+          SAVE BUTTON
+      ========================= */}
+
+      <TouchableOpacity
+        style={styles.saveButton}
+        onPress={handleSave}
+      >
+        <Text style={styles.saveButtonText}>
+          Save Settings
+        </Text>
+      </TouchableOpacity>
+
+      {/* =========================
+          INFORMATION
+      ========================= */}
+
+      <View style={styles.infoCard}>
+
+        <Text style={styles.infoTitle}>
+          How Low-Stock Alerts Work
+        </Text>
+
+        <Text style={styles.infoText}>
+          EggTrack compares the current inventory
+          of each egg size with its configured
+          threshold.
+        </Text>
+
+        <Text style={styles.infoText}>
+          When the inventory is equal to or below
+          the threshold, the egg size will be marked
+          as LOW STOCK.
+        </Text>
+
+      </View>
+
+      <View style={styles.bottomSpace} />
+
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+
+  // =========================
+  // CONTAINER
+  // =========================
+
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
 
-  content: {
-    padding: 20,
+  // =========================
+  // HEADER
+  // =========================
+
+  header: {
+    backgroundColor: '#FFFFFF',
+
+    paddingHorizontal: 20,
+    paddingTop: 25,
+    paddingBottom: 20,
+
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+
+    elevation: 2,
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
+    color: '#1F2937',
   },
 
   description: {
     fontSize: 14,
     color: '#6B7280',
     marginTop: 5,
-    marginBottom: 20,
   },
+
+  // =========================
+  // SECTION
+  // =========================
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+
+    marginHorizontal: 20,
+    marginTop: 25,
+    marginBottom: 6,
+  },
+
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+
+    lineHeight: 20,
+
+    marginHorizontal: 20,
+    marginBottom: 15,
+  },
+
+  // =========================
+  // SETTING CARD
+  // =========================
+
+  settingCard: {
+    backgroundColor: '#FFFFFF',
+
+    marginHorizontal: 20,
+    marginBottom: 12,
+
+    padding: 18,
+
+    borderRadius: 14,
+
+    elevation: 2,
+
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+  },
+
+  settingHeader: {
+    flexDirection: 'row',
+
+    justifyContent: 'space-between',
+
+    alignItems: 'center',
+
+    marginBottom: 12,
+  },
+
+  sizeName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+
+  unit: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+
+  // =========================
+  // INPUT
+  // =========================
+
+  inputLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+
+    marginBottom: 6,
+  },
+
+  input: {
+    backgroundColor: '#F9FAFB',
+
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+
+    borderRadius: 10,
+
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+
+    fontSize: 17,
+
+    color: '#1F2937',
+  },
+
+  helpText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+
+    marginTop: 7,
+
+    lineHeight: 18,
+  },
+
+  // =========================
+  // SAVE BUTTON
+  // =========================
+
+  saveButton: {
+    backgroundColor: '#111827',
+
+    marginHorizontal: 20,
+    marginTop: 10,
+
+    paddingVertical: 16,
+
+    borderRadius: 10,
+
+    elevation: 2,
+  },
+
+  saveButtonText: {
+    color: '#FFFFFF',
+
+    textAlign: 'center',
+
+    fontSize: 16,
+
+    fontWeight: 'bold',
+  },
+
+  // =========================
+  // INFORMATION
+  // =========================
 
   infoCard: {
     backgroundColor: '#FFFFFF',
+
+    marginHorizontal: 20,
+    marginTop: 20,
+
     padding: 18,
-    borderRadius: 12,
+
+    borderRadius: 14,
+
     elevation: 2,
   },
 
   infoTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
+
+    color: '#1F2937',
+
+    marginBottom: 10,
   },
 
   infoText: {
     fontSize: 14,
     color: '#6B7280',
-    marginTop: 8,
+
     lineHeight: 20,
-  },
 
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 25,
-    marginBottom: 15,
-  },
-
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
     marginBottom: 8,
   },
 
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 17,
-    marginBottom: 18,
+  // =========================
+  // BOTTOM SPACE
+  // =========================
+
+  bottomSpace: {
+    height: 40,
   },
 
-  saveButton: {
-    backgroundColor: '#111827',
-    padding: 16,
-    borderRadius: 10,
-    marginTop: 5,
-  },
-
-  saveButtonText: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  currentCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 25,
-    marginBottom: 30,
-    elevation: 2,
-  },
-
-  currentTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-
-  currentText: {
-    fontSize: 15,
-    marginVertical: 4,
-  },
 });

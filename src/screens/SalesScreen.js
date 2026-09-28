@@ -6,28 +6,16 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ImageBackground,
   Alert,
 } from 'react-native';
 
 import { EggContext } from '../EggContext';
 
-const EGG_SIZES = [
-  { key: 'pullet', label: 'Pullet' },
-  { key: 'small', label: 'Small' },
-  { key: 'medium', label: 'Medium' },
-  { key: 'large', label: 'Large' },
-  { key: 'xlarge', label: 'X-Large' },
-  { key: 'jumbo', label: 'Jumbo' },
-];
+const EGGS_PER_TRAY = 30;
 
-const emptyValues = {
-  pullet: '',
-  small: '',
-  medium: '',
-  large: '',
-  xlarge: '',
-  jumbo: '',
-};
+const BACKGROUND_IMAGE =
+  'https://img.freepik.com/premium-photo/side-profile-chicken-against-pink-background-concept-animal-photography-still-life-pink-backgrounds_864588-56895.jpg';
 
 export default function SalesScreen() {
   const {
@@ -37,617 +25,1295 @@ export default function SalesScreen() {
     addSale,
   } = useContext(EggContext);
 
+  // =====================================================
+  // INPUT MODE
+  // =====================================================
+
   const [inputMode, setInputMode] = useState('eggs');
 
-  const [quantities, setQuantities] = useState(emptyValues);
-  const [prices, setPrices] = useState(emptyValues);
+  // =====================================================
+  // EGG INPUTS
+  // =====================================================
 
-  const updateValue = (key, value) => {
-    setQuantities(previous => ({
-      ...previous,
-      [key]: value,
-    }));
-  };
+  const [pullet, setPullet] = useState('');
+  const [small, setSmall] = useState('');
+  const [medium, setMedium] = useState('');
+  const [large, setLarge] = useState('');
+  const [xlarge, setXlarge] = useState('');
+  const [jumbo, setJumbo] = useState('');
 
-  const updatePrice = (key, value) => {
-    setPrices(previous => ({
-      ...previous,
-      [key]: value,
-    }));
-  };
+  // =====================================================
+  // TRAY INPUTS
+  // =====================================================
 
-  const getNumber = value => {
-    if (value === '') {
-      return 0;
+  const [pulletTrays, setPulletTrays] = useState('');
+  const [pulletLoose, setPulletLoose] = useState('');
+
+  const [smallTrays, setSmallTrays] = useState('');
+  const [smallLoose, setSmallLoose] = useState('');
+
+  const [mediumTrays, setMediumTrays] = useState('');
+  const [mediumLoose, setMediumLoose] = useState('');
+
+  const [largeTrays, setLargeTrays] = useState('');
+  const [largeLoose, setLargeLoose] = useState('');
+
+  const [xlargeTrays, setXlargeTrays] = useState('');
+  const [xlargeLoose, setXlargeLoose] = useState('');
+
+  const [jumboTrays, setJumboTrays] = useState('');
+  const [jumboLoose, setJumboLoose] = useState('');
+
+  // =====================================================
+  // PRICES PER EGG
+  // =====================================================
+
+  const [pulletPrice, setPulletPrice] = useState('');
+  const [smallPrice, setSmallPrice] = useState('');
+  const [mediumPrice, setMediumPrice] = useState('');
+  const [largePrice, setLargePrice] = useState('');
+  const [xlargePrice, setXlargePrice] = useState('');
+  const [jumboPrice, setJumboPrice] = useState('');
+
+  // =====================================================
+  // CONVERT INPUT TO EGGS
+  // =====================================================
+
+  const getEggs = (eggs, trays, loose) => {
+    if (inputMode === 'eggs') {
+      return Number(eggs) || 0;
     }
 
-    return Number(value);
+    return (
+      (Number(trays) || 0) * EGGS_PER_TRAY +
+      (Number(loose) || 0)
+    );
   };
 
-  const calculateSale = () => {
-    const result = {
-      pullet: 0,
-      small: 0,
-      medium: 0,
-      large: 0,
-      xlarge: 0,
-      jumbo: 0,
-      totalEggs: 0,
-      totalAmount: 0,
-    };
+  // =====================================================
+  // TOTAL EGGS PER SIZE
+  // =====================================================
 
-    EGG_SIZES.forEach(size => {
-      const key = size.key;
-      const quantity = getNumber(quantities[key]);
-      const price = getNumber(prices[key]);
+  const pulletEggs = getEggs(
+    pullet,
+    pulletTrays,
+    pulletLoose
+  );
 
-      let eggs;
+  const smallEggs = getEggs(
+    small,
+    smallTrays,
+    smallLoose
+  );
 
-      if (inputMode === 'trays') {
-        eggs = quantity * 30;
-      } else {
-        eggs = quantity;
-      }
+  const mediumEggs = getEggs(
+    medium,
+    mediumTrays,
+    mediumLoose
+  );
 
-      result[key] = eggs;
-      result.totalEggs += eggs;
-      result.totalAmount += quantity * price;
-    });
+  const largeEggs = getEggs(
+    large,
+    largeTrays,
+    largeLoose
+  );
 
-    return result;
+  const xlargeEggs = getEggs(
+    xlarge,
+    xlargeTrays,
+    xlargeLoose
+  );
+
+  const jumboEggs = getEggs(
+    jumbo,
+    jumboTrays,
+    jumboLoose
+  );
+
+  // =====================================================
+  // TOTAL EGGS
+  // =====================================================
+
+  const totalEggs =
+    pulletEggs +
+    smallEggs +
+    mediumEggs +
+    largeEggs +
+    xlargeEggs +
+    jumboEggs;
+
+  // =====================================================
+  // TOTAL AMOUNT
+  // =====================================================
+
+  const totalAmount =
+    pulletEggs * (Number(pulletPrice) || 0) +
+    smallEggs * (Number(smallPrice) || 0) +
+    mediumEggs * (Number(mediumPrice) || 0) +
+    largeEggs * (Number(largePrice) || 0) +
+    xlargeEggs * (Number(xlargePrice) || 0) +
+    jumboEggs * (Number(jumboPrice) || 0);
+
+  // =====================================================
+  // FORMAT EGGS AS TRAYS
+  // =====================================================
+
+  const formatEggsAsTrays = eggs => {
+    const trays = Math.floor(eggs / EGGS_PER_TRAY);
+    const loose = eggs % EGGS_PER_TRAY;
+
+    if (trays > 0 && loose > 0) {
+      return `${trays} tray${
+        trays !== 1 ? 's' : ''
+      } + ${loose} eggs`;
+    }
+
+    if (trays > 0) {
+      return `${trays} tray${
+        trays !== 1 ? 's' : ''
+      }`;
+    }
+
+    return `${loose} eggs`;
   };
 
-  const validateWholeNumber = (value, fieldName) => {
-    if (value === '') {
+  // =====================================================
+  // VALIDATE NUMBER
+  // =====================================================
+
+  const isValidWholeNumber = value => {
+    if (value.trim() === '') {
       return true;
     }
 
     const number = Number(value);
 
-    if (!Number.isInteger(number) || number < 0) {
-      Alert.alert(
-        'Invalid Input',
-        `${fieldName} must be a whole number greater than or equal to 0.`
-      );
-
-      return false;
-    }
-
-    return true;
+    return (
+      number >= 0 &&
+      Number.isInteger(number)
+    );
   };
 
-  const validatePrice = (value, fieldName) => {
-    if (value === '') {
-      return true;
-    }
-
-    const number = Number(value);
-
-    if (isNaN(number) || number < 0) {
-      Alert.alert(
-        'Invalid Price',
-        `${fieldName} must be a valid price greater than or equal to 0.`
-      );
-
-      return false;
-    }
-
-    return true;
-  };
+  // =====================================================
+  // SAVE SALE
+  // =====================================================
 
   const handleSaveSale = () => {
-    let hasQuantity = false;
+    // -----------------------------------------------
+    // CHECK QUANTITIES
+    // -----------------------------------------------
 
-    // Validate quantities
-    for (const size of EGG_SIZES) {
-      const key = size.key;
-      const quantity = quantities[key];
+    const eggValues = [
+      pullet,
+      small,
+      medium,
+      large,
+      xlarge,
+      jumbo,
+    ];
 
-      const fieldName =
-        inputMode === 'trays'
-          ? `${size.label} trays`
-          : `${size.label} eggs`;
+    const trayValues = [
+      pulletTrays,
+      smallTrays,
+      mediumTrays,
+      largeTrays,
+      xlargeTrays,
+      jumboTrays,
+    ];
 
-      if (!validateWholeNumber(quantity, fieldName)) {
-        return;
-      }
+    const looseValues = [
+      pulletLoose,
+      smallLoose,
+      mediumLoose,
+      largeLoose,
+      xlargeLoose,
+      jumboLoose,
+    ];
 
-      if (getNumber(quantity) > 0) {
-        hasQuantity = true;
-      }
-    }
+    const priceValues = [
+      pulletPrice,
+      smallPrice,
+      mediumPrice,
+      largePrice,
+      xlargePrice,
+      jumboPrice,
+    ];
 
-    if (!hasQuantity) {
+    const valuesToCheck =
+      inputMode === 'eggs'
+        ? [...eggValues, ...priceValues]
+        : [
+            ...trayValues,
+            ...looseValues,
+            ...priceValues,
+          ];
+
+    const hasInvalidNumber =
+      valuesToCheck.some(
+        value => !isValidWholeNumber(value)
+      );
+
+    if (hasInvalidNumber) {
       Alert.alert(
-        'No Quantity Entered',
-        `Please enter at least one ${inputMode === 'trays' ? 'tray' : 'egg'}.`
+        'Invalid Input',
+        'Quantities and prices must be whole numbers that are 0 or greater.'
       );
 
       return;
     }
 
-    // Validate prices
-    for (const size of EGG_SIZES) {
-      const key = size.key;
-      const quantity = getNumber(quantities[key]);
-      const price = prices[key];
+    // -----------------------------------------------
+    // CHECK LOOSE EGGS
+    // -----------------------------------------------
 
-      if (quantity > 0) {
-        if (price === '') {
-          Alert.alert(
-            'Missing Price',
-            `Please enter the price ${
-              inputMode === 'trays'
-                ? 'per tray'
-                : 'per egg'
-            } for ${size.label}.`
-          );
+    if (inputMode === 'trays') {
+      const looseNumbers = looseValues.map(
+        value => Number(value) || 0
+      );
 
-          return;
-        }
+      const hasTooManyLooseEggs =
+        looseNumbers.some(
+          value => value >= EGGS_PER_TRAY
+        );
 
-        if (
-          !validatePrice(
-            price,
-            `${size.label} price ${
-              inputMode === 'trays'
-                ? 'per tray'
-                : 'per egg'
-            }`
-          )
-        ) {
-          return;
-        }
-      }
-    }
-
-    const sale = calculateSale();
-
-    // Check inventory
-    for (const size of EGG_SIZES) {
-      const key = size.key;
-
-      if (sale[key] > inventory[key]) {
+      if (hasTooManyLooseEggs) {
         Alert.alert(
-          'Insufficient Inventory',
-          `You are trying to sell ${sale[key]} ${size.label} eggs, but only ${inventory[key]} are available.`
+          'Invalid Loose Egg Quantity',
+          'Loose eggs must be less than 30. Enter another tray instead.'
         );
 
         return;
       }
     }
 
-    // Deduct inventory
-    const successful = sellEggs(sale);
+    // -----------------------------------------------
+    // CHECK TOTAL EGGS
+    // -----------------------------------------------
 
-    if (!successful) {
+    if (totalEggs === 0) {
       Alert.alert(
-        'Insufficient Inventory',
-        'The sale could not be completed because there is not enough inventory.'
+        'No Eggs Entered',
+        'Please enter at least one egg to record a sale.'
       );
 
       return;
     }
 
-    // Save sale record
-    const saleRecord = {
+    // -----------------------------------------------
+    // CHECK PRICE
+    // -----------------------------------------------
+
+    if (totalAmount <= 0) {
+      Alert.alert(
+        'Invalid Price',
+        'Please enter a price for the eggs being sold.'
+      );
+
+      return;
+    }
+
+    // -----------------------------------------------
+    // CHECK INVENTORY
+    // -----------------------------------------------
+
+    if (pulletEggs > inventory.pullet) {
+      Alert.alert(
+        'Insufficient Pullet Stock',
+        `You only have ${inventory.pullet} pullet eggs available.`
+      );
+
+      return;
+    }
+
+    if (smallEggs > inventory.small) {
+      Alert.alert(
+        'Insufficient Small Stock',
+        `You only have ${inventory.small} small eggs available.`
+      );
+
+      return;
+    }
+
+    if (mediumEggs > inventory.medium) {
+      Alert.alert(
+        'Insufficient Medium Stock',
+        `You only have ${inventory.medium} medium eggs available.`
+      );
+
+      return;
+    }
+
+    if (largeEggs > inventory.large) {
+      Alert.alert(
+        'Insufficient Large Stock',
+        `You only have ${inventory.large} large eggs available.`
+      );
+
+      return;
+    }
+
+    if (xlargeEggs > inventory.xlarge) {
+      Alert.alert(
+        'Insufficient X-Large Stock',
+        `You only have ${inventory.xlarge} X-Large eggs available.`
+      );
+
+      return;
+    }
+
+    if (jumboEggs > inventory.jumbo) {
+      Alert.alert(
+        'Insufficient Jumbo Stock',
+        `You only have ${inventory.jumbo} jumbo eggs available.`
+      );
+
+      return;
+    }
+
+    // -----------------------------------------------
+    // REMOVE FROM INVENTORY
+    // -----------------------------------------------
+
+    const saleData = {
+      pullet: pulletEggs,
+      small: smallEggs,
+      medium: mediumEggs,
+      large: largeEggs,
+      xlarge: xlargeEggs,
+      jumbo: jumboEggs,
+    };
+
+    const saleSuccessful = sellEggs(
+      saleData
+    );
+
+    if (!saleSuccessful) {
+      Alert.alert(
+        'Sale Failed',
+        'There is not enough inventory for this sale.'
+      );
+
+      return;
+    }
+
+    // -----------------------------------------------
+    // CREATE SALE RECORD
+    // -----------------------------------------------
+
+    const sale = {
       id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
 
-      pullet: sale.pullet,
-      small: sale.small,
-      medium: sale.medium,
-      large: sale.large,
-      xlarge: sale.xlarge,
-      jumbo: sale.jumbo,
-
-      totalEggs: sale.totalEggs,
-      totalAmount: sale.totalAmount,
+      date: new Date()
+        .toISOString()
+        .split('T')[0],
 
       inputMode,
 
-      quantities: {
-        pullet: getNumber(quantities.pullet),
-        small: getNumber(quantities.small),
-        medium: getNumber(quantities.medium),
-        large: getNumber(quantities.large),
-        xlarge: getNumber(quantities.xlarge),
-        jumbo: getNumber(quantities.jumbo),
-      },
+      pullet: pulletEggs,
+      small: smallEggs,
+      medium: mediumEggs,
+      large: largeEggs,
+      xlarge: xlargeEggs,
+      jumbo: jumboEggs,
 
-      prices: {
-        pullet: getNumber(prices.pullet),
-        small: getNumber(prices.small),
-        medium: getNumber(prices.medium),
-        large: getNumber(prices.large),
-        xlarge: getNumber(prices.xlarge),
-        jumbo: getNumber(prices.jumbo),
-      },
+      totalEggs,
+
+      totalAmount: Number(
+        totalAmount.toFixed(2)
+      ),
     };
 
-    addSale(saleRecord);
+    // -----------------------------------------------
+    // SAVE SALE
+    // -----------------------------------------------
+
+    addSale(sale);
+
+    // -----------------------------------------------
+    // CLEAR FORM
+    // -----------------------------------------------
+
+    setPullet('');
+    setSmall('');
+    setMedium('');
+    setLarge('');
+    setXlarge('');
+    setJumbo('');
+
+    setPulletTrays('');
+    setPulletLoose('');
+
+    setSmallTrays('');
+    setSmallLoose('');
+
+    setMediumTrays('');
+    setMediumLoose('');
+
+    setLargeTrays('');
+    setLargeLoose('');
+
+    setXlargeTrays('');
+    setXlargeLoose('');
+
+    setJumboTrays('');
+    setJumboLoose('');
+
+    setPulletPrice('');
+    setSmallPrice('');
+    setMediumPrice('');
+    setLargePrice('');
+    setXlargePrice('');
+    setJumboPrice('');
 
     Alert.alert(
       'Sale Recorded',
-      `${sale.totalEggs} eggs sold for ₱${sale.totalAmount.toFixed(2)}.`
+      `${totalEggs} eggs sold for ₱${totalAmount.toFixed(
+        2
+      )}.`
     );
-
-    // Clear fields
-    setQuantities(emptyValues);
-    setPrices(emptyValues);
   };
 
-  const preview = calculateSale();
+  // =====================================================
+  // EGG INPUT COMPONENT
+  // =====================================================
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      <Text style={styles.title}>Egg Sales</Text>
+  const renderEggInput = (
+    name,
+    value,
+    setValue,
+    price,
+    setPrice
+  ) => {
+    const total = Number(value) || 0;
+    const amount =
+      total * (Number(price) || 0);
 
-      <Text style={styles.subtitle}>
-        Record egg sales and automatically update inventory.
-      </Text>
-
-      {/* MODE TOGGLE */}
-      <View style={styles.modeContainer}>
-        <TouchableOpacity
-          style={[
-            styles.modeButton,
-            inputMode === 'eggs' && styles.activeModeButton,
-          ]}
-          onPress={() => setInputMode('eggs')}
-        >
-          <Text
-            style={[
-              styles.modeText,
-              inputMode === 'eggs' && styles.activeModeText,
-            ]}
-          >
-            Eggs
+    return (
+      <View style={styles.sizeCard}>
+        <View style={styles.sizeHeader}>
+          <Text style={styles.sizeTitle}>
+            {name}
           </Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.modeButton,
-            inputMode === 'trays' && styles.activeModeButton,
-          ]}
-          onPress={() => setInputMode('trays')}
-        >
-          <Text
-            style={[
-              styles.modeText,
-              inputMode === 'trays' && styles.activeModeText,
+          <Text style={styles.stockText}>
+            Stock:{' '}
+            {inventory[
+              name === 'X-Large'
+                ? 'xlarge'
+                : name.toLowerCase()
             ]}
-          >
-            Trays
           </Text>
-        </TouchableOpacity>
+        </View>
+
+        <Text style={styles.inputLabel}>
+          Number of Eggs
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={setValue}
+          placeholder="0"
+          keyboardType="numeric"
+          maxLength={5}
+        />
+
+        <Text style={styles.inputLabel}>
+          Price per Egg (₱)
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          value={price}
+          onChangeText={setPrice}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+          maxLength={8}
+        />
+
+        <View style={styles.calculatedRow}>
+          <Text style={styles.calculatedText}>
+            Eggs: {total}
+          </Text>
+
+          <Text style={styles.calculatedAmount}>
+            ₱{amount.toFixed(2)}
+          </Text>
+        </View>
       </View>
+    );
+  };
 
-      <Text style={styles.modeDescription}>
-        {inputMode === 'eggs'
-          ? 'Enter the number of eggs and price per egg.'
-          : 'Enter the number of trays and price per tray.'}
-      </Text>
+  // =====================================================
+  // TRAY INPUT COMPONENT
+  // =====================================================
 
-      {/* EGG SIZE INPUTS */}
-      {EGG_SIZES.map(size => {
-        const key = size.key;
-        const quantity = getNumber(quantities[key]);
-        const price = getNumber(prices[key]);
+  const renderTrayInput = (
+    name,
+    trays,
+    setTrays,
+    loose,
+    setLoose,
+    price,
+    setPrice
+  ) => {
+    const total =
+      (Number(trays) || 0) *
+        EGGS_PER_TRAY +
+      (Number(loose) || 0);
 
-        const amount = quantity * price;
+    const amount =
+      total * (Number(price) || 0);
 
-        return (
-          <View style={styles.sizeCard} key={key}>
-            <Text style={styles.sizeTitle}>
-              {size.label}
-            </Text>
+    const inventoryKey =
+      name === 'X-Large'
+        ? 'xlarge'
+        : name.toLowerCase();
 
-            <Text style={styles.available}>
-              Available: {inventory[key]} eggs
-            </Text>
+    return (
+      <View style={styles.sizeCard}>
+        <View style={styles.sizeHeader}>
+          <Text style={styles.sizeTitle}>
+            {name}
+          </Text>
 
+          <Text style={styles.stockText}>
+            Stock: {inventory[inventoryKey]}
+          </Text>
+        </View>
+
+        <View style={styles.inputRow}>
+          <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>
-              {inputMode === 'trays'
-                ? 'Number of Trays'
-                : 'Number of Eggs'}
+              Trays
             </Text>
 
             <TextInput
               style={styles.input}
+              value={trays}
+              onChangeText={setTrays}
               placeholder="0"
               keyboardType="numeric"
-              value={quantities[key]}
-              onChangeText={value =>
-                updateValue(
-                  key,
-                  value.replace(/[^0-9]/g, '')
-                )
-              }
+              maxLength={4}
             />
+          </View>
 
+          <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>
-              {inputMode === 'trays'
-                ? 'Price per Tray (₱)'
-                : 'Price per Egg (₱)'}
+              Loose Eggs
             </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="0.00"
-              keyboardType="decimal-pad"
-              value={prices[key]}
-              onChangeText={value =>
-                updatePrice(
-                  key,
-                  value.replace(/[^0-9.]/g, '')
-                )
-              }
+              value={loose}
+              onChangeText={setLoose}
+              placeholder="0"
+              keyboardType="numeric"
+              maxLength={2}
             />
-
-            {inputMode === 'trays' && quantity > 0 && (
-              <Text style={styles.conversionText}>
-                {quantity} tray(s) = {quantity * 30} eggs
-              </Text>
-            )}
-
-            <Text style={styles.amountText}>
-              Amount: ₱{amount.toFixed(2)}
-            </Text>
           </View>
-        );
-      })}
+        </View>
 
-      {/* SALE SUMMARY */}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>
-          Sale Summary
+        <Text style={styles.inputLabel}>
+          Price per Egg (₱)
         </Text>
 
-        <Text style={styles.summaryText}>
-          Total Eggs: {preview.totalEggs}
-        </Text>
+        <TextInput
+          style={styles.input}
+          value={price}
+          onChangeText={setPrice}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+          maxLength={8}
+        />
 
-        {inputMode === 'trays' && (
-          <Text style={styles.summaryText}>
-            Total Trays: {Object.values(quantities).reduce(
-              (total, value) => total + getNumber(value),
-              0
-            )}
+        <View style={styles.calculatedRow}>
+          <Text style={styles.calculatedText}>
+            Total: {total} eggs
           </Text>
-        )}
 
-        <Text style={styles.totalAmount}>
-          Total Amount: ₱{preview.totalAmount.toFixed(2)}
-        </Text>
+          <Text style={styles.calculatedAmount}>
+            ₱{amount.toFixed(2)}
+          </Text>
+        </View>
       </View>
+    );
+  };
 
-      {/* SAVE SALE */}
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={handleSaveSale}
-      >
-        <Text style={styles.saveButtonText}>
-          Save Sale
-        </Text>
-      </TouchableOpacity>
+  // =====================================================
+  // RENDER
+  // =====================================================
 
-      {/* SALE HISTORY */}
-      <Text style={styles.historyTitle}>
-        Sale History
-      </Text>
+  return (
+    <ImageBackground
+      source={{
+        uri: BACKGROUND_IMAGE,
+      }}
+      style={styles.background}
+      imageStyle={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={
+            styles.contentContainer
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {/* HEADER */}
 
-      {sales.length === 0 ? (
-        <Text style={styles.emptyText}>
-          No sales recorded yet.
-        </Text>
-      ) : (
-        sales.map(sale => (
-          <View
-            style={styles.historyCard}
-            key={sale.id}
-          >
-            <Text style={styles.historyDate}>
-              {sale.date}
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              Record Egg Sale
             </Text>
 
-            <Text style={styles.historyText}>
-              Eggs Sold: {sale.totalEggs}
-            </Text>
-
-            <Text style={styles.historyText}>
-              Revenue: ₱
-              {Number(sale.totalAmount).toFixed(2)}
-            </Text>
-
-            <Text style={styles.historyText}>
-              Method:{' '}
-              {sale.inputMode === 'trays'
-                ? 'Trays'
-                : 'Eggs'}
+            <Text style={styles.description}>
+              Record eggs sold and automatically
+              update your inventory.
             </Text>
           </View>
-        ))
-      )}
-    </ScrollView>
+
+          {/* RECORDING METHOD */}
+
+          <View style={styles.modeCard}>
+            <Text style={styles.modeTitle}>
+              Recording Method
+            </Text>
+
+            <View style={styles.modeRow}>
+              <TouchableOpacity
+                style={[
+                  styles.modeButton,
+                  inputMode === 'eggs' &&
+                    styles.activeModeButton,
+                ]}
+                onPress={() =>
+                  setInputMode('eggs')
+                }
+              >
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    inputMode === 'eggs' &&
+                      styles.activeModeButtonText,
+                  ]}
+                >
+                  Eggs
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modeButton,
+                  inputMode === 'trays' &&
+                    styles.activeModeButton,
+                ]}
+                onPress={() =>
+                  setInputMode('trays')
+                }
+              >
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    inputMode === 'trays' &&
+                      styles.activeModeButtonText,
+                  ]}
+                >
+                  Trays + Loose
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modeDescription}>
+              {inputMode === 'eggs'
+                ? 'Enter the exact number of eggs sold.'
+                : 'Enter complete trays and remaining loose eggs. One tray contains 30 eggs.'}
+            </Text>
+          </View>
+
+          {/* EGG INPUTS */}
+
+          {inputMode === 'eggs' ? (
+            <>
+              {renderEggInput(
+                'Pullet',
+                pullet,
+                setPullet,
+                pulletPrice,
+                setPulletPrice
+              )}
+
+              {renderEggInput(
+                'Small',
+                small,
+                setSmall,
+                smallPrice,
+                setSmallPrice
+              )}
+
+              {renderEggInput(
+                'Medium',
+                medium,
+                setMedium,
+                mediumPrice,
+                setMediumPrice
+              )}
+
+              {renderEggInput(
+                'Large',
+                large,
+                setLarge,
+                largePrice,
+                setLargePrice
+              )}
+
+              {renderEggInput(
+                'X-Large',
+                xlarge,
+                setXlarge,
+                xlargePrice,
+                setXlargePrice
+              )}
+
+              {renderEggInput(
+                'Jumbo',
+                jumbo,
+                setJumbo,
+                jumboPrice,
+                setJumboPrice
+              )}
+            </>
+          ) : (
+            <>
+              {renderTrayInput(
+                'Pullet',
+                pulletTrays,
+                setPulletTrays,
+                pulletLoose,
+                setPulletLoose,
+                pulletPrice,
+                setPulletPrice
+              )}
+
+              {renderTrayInput(
+                'Small',
+                smallTrays,
+                setSmallTrays,
+                smallLoose,
+                setSmallLoose,
+                smallPrice,
+                setSmallPrice
+              )}
+
+              {renderTrayInput(
+                'Medium',
+                mediumTrays,
+                setMediumTrays,
+                mediumLoose,
+                setMediumLoose,
+                mediumPrice,
+                setMediumPrice
+              )}
+
+              {renderTrayInput(
+                'Large',
+                largeTrays,
+                setLargeTrays,
+                largeLoose,
+                setLargeLoose,
+                largePrice,
+                setLargePrice
+              )}
+
+              {renderTrayInput(
+                'X-Large',
+                xlargeTrays,
+                setXlargeTrays,
+                xlargeLoose,
+                setXlargeLoose,
+                xlargePrice,
+                setXlargePrice
+              )}
+
+              {renderTrayInput(
+                'Jumbo',
+                jumboTrays,
+                setJumboTrays,
+                jumboLoose,
+                setJumboLoose,
+                jumboPrice,
+                setJumboPrice
+              )}
+            </>
+          )}
+
+          {/* SALE SUMMARY */}
+
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>
+              Sale Summary
+            </Text>
+
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>
+                Total Eggs
+              </Text>
+
+              <Text style={styles.summaryValue}>
+                {totalEggs}
+              </Text>
+            </View>
+
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>
+                Equivalent
+              </Text>
+
+              <Text style={styles.summaryValue}>
+                {formatEggsAsTrays(totalEggs)}
+              </Text>
+            </View>
+
+            <View style={styles.summaryDivider} />
+
+            <View style={styles.summaryRow}>
+              <Text style={styles.totalLabel}>
+                Total Amount
+              </Text>
+
+              <Text style={styles.totalAmount}>
+                ₱{totalAmount.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+
+          {/* SAVE BUTTON */}
+
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSaveSale}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.saveButtonText}>
+              Save Sale
+            </Text>
+          </TouchableOpacity>
+
+          {/* SALES HISTORY */}
+
+          <Text style={styles.historyTitle}>
+            Sales History
+          </Text>
+
+          {sales.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>
+                No sales recorded yet.
+              </Text>
+            </View>
+          ) : (
+            sales.map(sale => (
+              <View
+                key={sale.id}
+                style={styles.saleCard}
+              >
+                <View
+                  style={styles.saleHeader}
+                >
+                  <View>
+                    <Text
+                      style={styles.saleTitle}
+                    >
+                      Egg Sale
+                    </Text>
+
+                    <Text
+                      style={styles.saleDate}
+                    >
+                      {sale.date}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={styles.saleAmount}
+                  >
+                    ₱
+                    {Number(
+                      sale.totalAmount || 0
+                    ).toFixed(2)}
+                  </Text>
+                </View>
+
+                <Text
+                  style={styles.saleEggs}
+                >
+                  {sale.totalEggs} eggs
+                </Text>
+
+                <Text
+                  style={styles.saleTrayText}
+                >
+                  {formatEggsAsTrays(
+                    sale.totalEggs
+                  )}
+                </Text>
+
+                <Text
+                  style={styles.saleMethod}
+                >
+                  Method:{' '}
+                  {sale.inputMode ===
+                  'trays'
+                    ? 'Trays + Loose'
+                    : 'Eggs'}
+                </Text>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </View>
+    </ImageBackground>
   );
 }
 
+// =====================================================
+// STYLES
+// =====================================================
+
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
   },
 
-  content: {
-    padding: 16,
+  backgroundImage: {
+    opacity: 0.7,
+    resizeMode: 'cover',
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor:
+      'rgba(245, 247, 250, 0.40)',
+  },
+
+  container: {
+    flex: 1,
+  },
+
+  contentContainer: {
+    padding: 20,
     paddingBottom: 40,
+  },
+
+  // ===================================================
+  // HEADER
+  // ===================================================
+
+  header: {
+    backgroundColor:
+      'rgba(255, 255, 255, 0.90)',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 15,
+    elevation: 3,
   },
 
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 5,
+    color: '#1F2937',
   },
 
-  subtitle: {
+  description: {
+    fontSize: 14,
     color: '#6B7280',
-    marginBottom: 15,
+    marginTop: 6,
+    lineHeight: 20,
   },
 
-  modeContainer: {
+  // ===================================================
+  // MODE
+  // ===================================================
+
+  modeCard: {
+    backgroundColor:
+      'rgba(255, 255, 255, 0.94)',
+    padding: 18,
+    borderRadius: 14,
+    marginBottom: 15,
+    elevation: 3,
+  },
+
+  modeTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+
+  modeRow: {
     flexDirection: 'row',
-    backgroundColor: '#E5E7EB',
-    borderRadius: 10,
-    padding: 4,
-    marginBottom: 8,
+    gap: 10,
   },
 
   modeButton: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+    padding: 13,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 10,
+    backgroundColor: '#F9FAFB',
   },
 
   activeModeButton: {
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
+    backgroundColor: '#111827',
+    borderColor: '#111827',
   },
 
-  modeText: {
+  modeButtonText: {
+    textAlign: 'center',
     fontWeight: 'bold',
-    color: '#6B7280',
+    color: '#374151',
   },
 
-  activeModeText: {
-    color: '#111827',
+  activeModeButtonText: {
+    color: '#FFFFFF',
   },
 
   modeDescription: {
     fontSize: 13,
     color: '#6B7280',
-    marginBottom: 15,
+    marginTop: 12,
+    lineHeight: 19,
   },
 
+  // ===================================================
+  // SIZE CARD
+  // ===================================================
+
   sizeCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor:
+      'rgba(255, 255, 255, 0.94)',
+    padding: 18,
+    borderRadius: 14,
     marginBottom: 12,
-    elevation: 2,
+    elevation: 3,
+  },
+
+  sizeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
 
   sizeTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    color: '#1F2937',
   },
 
-  available: {
-    color: '#6B7280',
-    marginBottom: 12,
+  stockText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#2563EB',
+  },
+
+  inputRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+
+  inputContainer: {
+    flex: 1,
   },
 
   inputLabel: {
     fontSize: 13,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#374151',
+    color: '#6B7280',
+    marginBottom: 6,
+    marginTop: 5,
   },
 
   input: {
     backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 11,
-    marginBottom: 10,
-    fontSize: 16,
+    borderRadius: 10,
+    padding: 13,
+    fontSize: 17,
+    color: '#111827',
   },
 
-  conversionText: {
-    color: '#6B7280',
-    marginTop: 2,
+  calculatedRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
   },
 
-  amountText: {
-    fontSize: 16,
+  calculatedText: {
+    fontSize: 14,
     fontWeight: 'bold',
-    marginTop: 5,
+    color: '#374151',
   },
+
+  calculatedAmount: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#16A34A',
+  },
+
+  // ===================================================
+  // SUMMARY
+  // ===================================================
 
   summaryCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 12,
-    marginTop: 5,
-    marginBottom: 15,
-    elevation: 2,
+    backgroundColor:
+      'rgba(255, 255, 255, 0.96)',
+    padding: 20,
+    borderRadius: 14,
+    marginTop: 8,
+    elevation: 3,
   },
 
   summaryTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    color: '#1F2937',
+    marginBottom: 15,
   },
 
-  summaryText: {
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+
+  summaryLabel: {
+    fontSize: 15,
+    color: '#6B7280',
+  },
+
+  summaryValue: {
     fontSize: 16,
-    marginBottom: 5,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+
+  summaryDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+
+  totalLabel: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#1F2937',
   },
 
   totalAmount: {
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginTop: 8,
+    color: '#16A34A',
   },
+
+  // ===================================================
+  // SAVE BUTTON
+  // ===================================================
 
   saveButton: {
     backgroundColor: '#111827',
-    padding: 16,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 25,
+    padding: 17,
+    borderRadius: 12,
+    marginTop: 18,
+    elevation: 3,
   },
 
   saveButtonText: {
     color: '#FFFFFF',
+    textAlign: 'center',
     fontSize: 17,
     fontWeight: 'bold',
   },
 
+  // ===================================================
+  // HISTORY
+  // ===================================================
+
   historyTitle: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: 'bold',
-    marginBottom: 10,
+    color: '#1F2937',
+    marginTop: 30,
+    marginBottom: 12,
+  },
+
+  emptyCard: {
+    backgroundColor:
+      'rgba(255, 255, 255, 0.94)',
+    padding: 20,
+    borderRadius: 14,
+    elevation: 2,
   },
 
   emptyText: {
     color: '#6B7280',
-    marginBottom: 20,
+    textAlign: 'center',
   },
 
-  historyCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    elevation: 1,
+  saleCard: {
+    backgroundColor:
+      'rgba(255, 255, 255, 0.94)',
+    padding: 18,
+    borderRadius: 14,
+    marginBottom: 12,
+    elevation: 3,
   },
 
-  historyDate: {
+  saleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+
+  saleTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
+    color: '#1F2937',
   },
 
-  historyText: {
-    color: '#4B5563',
-    marginTop: 2,
+  saleDate: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
+  saleAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#16A34A',
+  },
+
+  saleEggs: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 12,
+  },
+
+  saleTrayText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
+  saleMethod: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 6,
   },
 });

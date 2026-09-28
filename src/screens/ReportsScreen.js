@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
+  ImageBackground,
 } from 'react-native';
 
 import { LineChart, BarChart } from 'react-native-chart-kit';
@@ -20,6 +21,10 @@ export default function ReportsScreen() {
     inventory,
   } = useContext(EggContext);
 
+  // =========================
+  // TOTAL INVENTORY
+  // =========================
+
   const totalInventory =
     inventory.pullet +
     inventory.small +
@@ -28,370 +33,705 @@ export default function ReportsScreen() {
     inventory.xlarge +
     inventory.jumbo;
 
+  // =========================
+  // TOTAL PRODUCTION
+  // =========================
+
   const totalEggsProduced = productions.reduce(
-    (total, production) => total + production.totalEggs,
+    (total, production) =>
+      total + Number(production.totalEggs || 0),
     0
   );
+
+  // =========================
+  // TOTAL SALES
+  // =========================
 
   const totalEggsSold = sales.reduce(
-    (total, sale) => total + sale.totalEggs,
+    (total, sale) =>
+      total + Number(sale.totalEggs || 0),
     0
   );
 
+  // =========================
+  // TOTAL REVENUE
+  // =========================
+
   const totalRevenue = sales.reduce(
-    (total, sale) => total + sale.totalAmount,
+    (total, sale) =>
+      total + Number(sale.totalAmount || 0),
     0
   );
+
+  // =========================
+  // PRODUCTION BY SIZE
+  // =========================
 
   const productionBySize = {
     pullet: productions.reduce(
-      (total, production) => total + production.pullet,
+      (total, production) =>
+        total + Number(production.pullet || 0),
       0
     ),
 
     small: productions.reduce(
-      (total, production) => total + production.small,
+      (total, production) =>
+        total + Number(production.small || 0),
       0
     ),
 
     medium: productions.reduce(
-      (total, production) => total + production.medium,
+      (total, production) =>
+        total + Number(production.medium || 0),
       0
     ),
 
     large: productions.reduce(
-      (total, production) => total + production.large,
+      (total, production) =>
+        total + Number(production.large || 0),
       0
     ),
 
     xlarge: productions.reduce(
-      (total, production) => total + production.xlarge,
+      (total, production) =>
+        total + Number(production.xlarge || 0),
       0
     ),
 
     jumbo: productions.reduce(
-      (total, production) => total + production.jumbo,
+      (total, production) =>
+        total + Number(production.jumbo || 0),
       0
     ),
   };
 
-  /*
-   * ==========================================
-   * DAILY PRODUCTION
-   * ==========================================
-   *
-   * Combine every production record that has
-   * the same date.
-   *
-   * This means:
-   *
-   * Sep 27 - 100 eggs
-   * Sep 27 - 80 eggs
-   * Sep 27 - 65 eggs
-   *
-   * becomes:
-   *
-   * Sep 27 - 245 eggs
-   */
+  // =========================
+  // DAILY PRODUCTION
+  // =========================
 
   const dailyProduction = {};
 
-  productions.forEach((production) => {
-    if (!dailyProduction[production.date]) {
-      dailyProduction[production.date] = 0;
+  productions.forEach(production => {
+    const date = production.date;
+
+    if (!dailyProduction[date]) {
+      dailyProduction[date] = 0;
     }
 
-    dailyProduction[production.date] += production.totalEggs;
+    dailyProduction[date] += Number(
+      production.totalEggs || 0
+    );
   });
 
   const productionDates = Object.keys(dailyProduction)
     .sort()
     .slice(-7);
 
-  const productionLabels = productionDates.map(
-    (date) => {
-      const parts = date.split('-');
+  const productionLabels = productionDates.map(date => {
+    const parts = date.split('-');
 
+    if (parts.length === 3) {
       return `${parts[1]}/${parts[2]}`;
     }
-  );
+
+    return date;
+  });
 
   const productionValues = productionDates.map(
-    (date) => dailyProduction[date]
+    date => dailyProduction[date]
   );
 
-  /*
-   * ==========================================
-   * DAILY SALES
-   * ==========================================
-   *
-   * Combine all sales made on the same date.
-   */
+  // =========================
+  // DAILY SALES
+  // =========================
 
   const dailySales = {};
 
-  sales.forEach((sale) => {
-    if (!dailySales[sale.date]) {
-      dailySales[sale.date] = 0;
+  sales.forEach(sale => {
+    const date = sale.date;
+
+    if (!dailySales[date]) {
+      dailySales[date] = 0;
     }
 
-    dailySales[sale.date] += sale.totalEggs;
+    dailySales[date] += Number(
+      sale.totalEggs || 0
+    );
   });
 
   const salesDates = Object.keys(dailySales)
     .sort()
     .slice(-7);
 
-  const salesLabels = salesDates.map(
-    (date) => {
-      const parts = date.split('-');
+  const salesLabels = salesDates.map(date => {
+    const parts = date.split('-');
 
+    if (parts.length === 3) {
       return `${parts[1]}/${parts[2]}`;
     }
-  );
+
+    return date;
+  });
 
   const salesValues = salesDates.map(
-    (date) => dailySales[date]
+    date => dailySales[date]
   );
+
+  // =========================
+  // CHART DATA
+  // =========================
+
+  const productionChartData = {
+    labels:
+      productionLabels.length > 0
+        ? productionLabels
+        : ['No Data'],
+
+    datasets: [
+      {
+        data:
+          productionValues.length > 0
+            ? productionValues
+            : [0],
+      },
+    ],
+  };
+
+  const salesChartData = {
+    labels:
+      salesLabels.length > 0
+        ? salesLabels
+        : ['No Data'],
+
+    datasets: [
+      {
+        data:
+          salesValues.length > 0
+            ? salesValues
+            : [0],
+      },
+    ],
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>
-        Reports & Analytics
-      </Text>
+    <ImageBackground
+      source={{
+        uri:
+          'https://img.freepik.com/premium-photo/side-profile-chicken-against-pink-background-concept-animal-photography-still-life-pink-backgrounds_864588-56895.jpg',
+      }}
+      style={styles.background}
+      imageStyle={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      {/* LIGHT OVERLAY */}
 
-      {/* SUMMARY */}
+      <View style={styles.overlay}>
 
-      <Text style={styles.sectionTitle}>
-        Summary
-      </Text>
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
 
-      <View style={styles.card}>
-        <Text style={styles.label}>
-          Current Inventory
-        </Text>
+          {/* =========================
+              HEADER
+          ========================= */}
 
-        <Text style={styles.value}>
-          {totalInventory} eggs
-        </Text>
-      </View>
+          <View style={styles.header}>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>
-          Total Eggs Produced
-        </Text>
+            <Text style={styles.title}>
+              Reports & Analytics
+            </Text>
 
-        <Text style={styles.value}>
-          {totalEggsProduced} eggs
-        </Text>
-      </View>
+            <Text style={styles.subtitle}>
+              Egg production, sales and inventory overview
+            </Text>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>
-          Total Eggs Sold
-        </Text>
+          </View>
 
-        <Text style={styles.value}>
-          {totalEggsSold} eggs
-        </Text>
-      </View>
+          {/* =========================
+              SUMMARY
+          ========================= */}
 
-      <View style={styles.card}>
-        <Text style={styles.label}>
-          Total Revenue
-        </Text>
-
-        <Text style={styles.value}>
-          ₱{totalRevenue.toFixed(2)}
-        </Text>
-      </View>
-
-      {/* DAILY EGG HARVEST */}
-
-      <Text style={styles.sectionTitle}>
-        Daily Egg Harvest
-      </Text>
-
-      {productionDates.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>
-            No production data available yet.
+          <Text style={styles.sectionTitle}>
+            Summary
           </Text>
-        </View>
-      ) : (
-        <View style={styles.chartCard}>
-          <LineChart
-            data={{
-              labels: productionLabels,
-              datasets: [
-                {
-                  data: productionValues,
-                },
-              ],
-            }}
-            width={screenWidth - 32}
-            height={240}
-            yAxisSuffix=""
-            chartConfig={chartConfig}
-            bezier
-            fromZero
-            style={styles.chart}
-          />
-        </View>
-      )}
 
-      {/* DAILY EGG SALES */}
+          <View style={styles.summaryGrid}>
 
-      <Text style={styles.sectionTitle}>
-        Daily Egg Sales
-      </Text>
+            <View style={styles.summaryCard}>
 
-      {salesDates.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>
-            No sales data available yet.
+              <Text style={styles.cardLabel}>
+                Current Inventory
+              </Text>
+
+              <Text style={styles.cardValue}>
+                {totalInventory}
+              </Text>
+
+              <Text style={styles.cardUnit}>
+                eggs
+              </Text>
+
+            </View>
+
+            <View style={styles.summaryCard}>
+
+              <Text style={styles.cardLabel}>
+                Eggs Produced
+              </Text>
+
+              <Text style={styles.cardValue}>
+                {totalEggsProduced}
+              </Text>
+
+              <Text style={styles.cardUnit}>
+                eggs
+              </Text>
+
+            </View>
+
+            <View style={styles.summaryCard}>
+
+              <Text style={styles.cardLabel}>
+                Eggs Sold
+              </Text>
+
+              <Text style={styles.cardValue}>
+                {totalEggsSold}
+              </Text>
+
+              <Text style={styles.cardUnit}>
+                eggs
+              </Text>
+
+            </View>
+
+            <View style={styles.summaryCard}>
+
+              <Text style={styles.cardLabel}>
+                Total Revenue
+              </Text>
+
+              <Text style={styles.revenueValue}>
+                ₱{totalRevenue.toFixed(2)}
+              </Text>
+
+              <Text style={styles.cardUnit}>
+                sales
+              </Text>
+
+            </View>
+
+          </View>
+
+          {/* =========================
+              DAILY EGG HARVEST
+          ========================= */}
+
+          <Text style={styles.sectionTitle}>
+            Daily Egg Harvest
           </Text>
-        </View>
-      ) : (
-        <View style={styles.chartCard}>
-          <BarChart
-            data={{
-              labels: salesLabels,
-              datasets: [
-                {
-                  data: salesValues,
-                },
-              ],
-            }}
-            width={screenWidth - 32}
-            height={240}
-            yAxisSuffix=""
-            chartConfig={chartConfig}
-            fromZero
-            showValuesOnTopOfBars
-            style={styles.chart}
-          />
-        </View>
-      )}
 
-      {/* PRODUCTION BY SIZE */}
+          {productionDates.length === 0 ? (
 
-      <Text style={styles.sectionTitle}>
-        Production by Egg Size
-      </Text>
+            <View style={styles.emptyCard}>
 
-      <View style={styles.card}>
-        <Text style={styles.item}>
-          Pullet: {productionBySize.pullet}
-        </Text>
+              <Text style={styles.emptyText}>
+                No production data available yet.
+              </Text>
 
-        <Text style={styles.item}>
-          Small: {productionBySize.small}
-        </Text>
+            </View>
 
-        <Text style={styles.item}>
-          Medium: {productionBySize.medium}
-        </Text>
+          ) : (
 
-        <Text style={styles.item}>
-          Large: {productionBySize.large}
-        </Text>
+            <View style={styles.chartCard}>
 
-        <Text style={styles.item}>
-          X-Large: {productionBySize.xlarge}
-        </Text>
+              <LineChart
+                data={productionChartData}
+                width={screenWidth - 40}
+                height={240}
+                fromZero
+                bezier
+                yAxisSuffix=""
+                chartConfig={chartConfig}
+                style={styles.chart}
+              />
 
-        <Text style={styles.item}>
-          Jumbo: {productionBySize.jumbo}
-        </Text>
+            </View>
+
+          )}
+
+          {/* =========================
+              DAILY EGG SALES
+          ========================= */}
+
+          <Text style={styles.sectionTitle}>
+            Daily Egg Sales
+          </Text>
+
+          {salesDates.length === 0 ? (
+
+            <View style={styles.emptyCard}>
+
+              <Text style={styles.emptyText}>
+                No sales data available yet.
+              </Text>
+
+            </View>
+
+          ) : (
+
+            <View style={styles.chartCard}>
+
+              <BarChart
+                data={salesChartData}
+                width={screenWidth - 40}
+                height={240}
+                fromZero
+                yAxisSuffix=""
+                chartConfig={chartConfig}
+                showValuesOnTopOfBars
+                style={styles.chart}
+              />
+
+            </View>
+
+          )}
+
+          {/* =========================
+              PRODUCTION BY SIZE
+          ========================= */}
+
+          <Text style={styles.sectionTitle}>
+            Production by Egg Size
+          </Text>
+
+          <View style={styles.dataCard}>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Pullet
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {productionBySize.pullet} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Small
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {productionBySize.small} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Medium
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {productionBySize.medium} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Large
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {productionBySize.large} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                X-Large
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {productionBySize.xlarge} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Jumbo
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {productionBySize.jumbo} eggs
+              </Text>
+            </View>
+
+          </View>
+
+          {/* =========================
+              CURRENT INVENTORY BY SIZE
+          ========================= */}
+
+          <Text style={styles.sectionTitle}>
+            Current Inventory by Size
+          </Text>
+
+          <View style={styles.dataCard}>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Pullet
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {inventory.pullet} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Small
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {inventory.small} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Medium
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {inventory.medium} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Large
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {inventory.large} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                X-Large
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {inventory.xlarge} eggs
+              </Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataName}>
+                Jumbo
+              </Text>
+
+              <Text style={styles.dataValue}>
+                {inventory.jumbo} eggs
+              </Text>
+            </View>
+
+          </View>
+
+          {/* BOTTOM SPACE */}
+
+          <View style={styles.bottomSpace} />
+
+        </ScrollView>
+
       </View>
 
-      {/* CURRENT INVENTORY BY SIZE */}
-
-      <Text style={styles.sectionTitle}>
-        Current Inventory by Size
-      </Text>
-
-      <View style={styles.card}>
-        <Text style={styles.item}>
-          Pullet: {inventory.pullet}
-        </Text>
-
-        <Text style={styles.item}>
-          Small: {inventory.small}
-        </Text>
-
-        <Text style={styles.item}>
-          Medium: {inventory.medium}
-        </Text>
-
-        <Text style={styles.item}>
-          Large: {inventory.large}
-        </Text>
-
-        <Text style={styles.item}>
-          X-Large: {inventory.xlarge}
-        </Text>
-
-        <Text style={styles.item}>
-          Jumbo: {inventory.jumbo}
-        </Text>
-      </View>
-    </ScrollView>
+    </ImageBackground>
   );
 }
+
+// =====================================================
+// CHART CONFIGURATION
+// =====================================================
 
 const chartConfig = {
   backgroundGradientFrom: '#FFFFFF',
   backgroundGradientTo: '#FFFFFF',
+
   decimalPlaces: 0,
 
   color: (opacity = 1) =>
-    `rgba(0, 0, 0, ${opacity})`,
+    `rgba(37, 99, 235, ${opacity})`,
 
   labelColor: (opacity = 1) =>
-    `rgba(0, 0, 0, ${opacity})`,
+    `rgba(55, 65, 81, ${opacity})`,
 
   propsForDots: {
     r: '5',
     strokeWidth: '2',
   },
+
+  propsForLabels: {
+    fontSize: 11,
+  },
 };
 
+// =====================================================
+// STYLES
+// =====================================================
+
 const styles = StyleSheet.create({
+
+  // =========================
+  // BACKGROUND
+  // =========================
+
+  background: {
+    flex: 1,
+  },
+
+  backgroundImage: {
+    opacity: 0.75,
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor:
+      'rgba(245, 247, 250, 0.35)',
+  },
+
+  // =========================
+  // CONTAINER
+  // =========================
+
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
-    padding: 16,
+  },
+
+  // =========================
+  // HEADER
+  // =========================
+
+  header: {
+    backgroundColor:
+      'rgba(255, 255, 255, 0.90)',
+
+    paddingHorizontal: 20,
+    paddingTop: 25,
+    paddingBottom: 20,
+
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+
+    elevation: 2,
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#1F2937',
   },
+
+  subtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 5,
+  },
+
+  // =========================
+  // SECTION
+  // =========================
 
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 18,
+    color: '#1F2937',
+
+    marginHorizontal: 20,
+    marginTop: 25,
     marginBottom: 10,
   },
 
-  card: {
-    backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 12,
-    marginBottom: 10,
-    elevation: 2,
+  // =========================
+  // SUMMARY
+  // =========================
+
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 15,
   },
+
+  summaryCard: {
+    width: '46%',
+
+    backgroundColor:
+      'rgba(255, 255, 255, 0.93)',
+
+    marginHorizontal: '2%',
+    marginBottom: 12,
+
+    padding: 16,
+
+    borderRadius: 14,
+
+    elevation: 3,
+
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 5,
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+  },
+
+  cardLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+
+  cardValue: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginTop: 6,
+  },
+
+  revenueValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#16A34A',
+    marginTop: 9,
+  },
+
+  cardUnit: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 3,
+  },
+
+  // =========================
+  // CHART
+  // =========================
 
   chartCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 8,
-    marginBottom: 10,
-    elevation: 2,
+    backgroundColor:
+      'rgba(255, 255, 255, 0.95)',
+
+    marginHorizontal: 20,
+
+    padding: 10,
+
+    borderRadius: 14,
+
+    elevation: 3,
+
     overflow: 'hidden',
   },
 
@@ -399,31 +739,78 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
 
-  label: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 6,
-  },
-
-  value: {
-    fontSize: 23,
-    fontWeight: 'bold',
-  },
-
-  item: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
+  // =========================
+  // EMPTY
+  // =========================
 
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor:
+      'rgba(255, 255, 255, 0.93)',
+
+    marginHorizontal: 20,
+
     padding: 20,
-    borderRadius: 12,
-    marginBottom: 10,
+
+    borderRadius: 14,
+
+    elevation: 2,
   },
 
   emptyText: {
     textAlign: 'center',
     color: '#6B7280',
+    fontSize: 14,
   },
+
+  // =========================
+  // DATA CARD
+  // =========================
+
+  dataCard: {
+    backgroundColor:
+      'rgba(255, 255, 255, 0.93)',
+
+    marginHorizontal: 20,
+
+    paddingHorizontal: 15,
+
+    borderRadius: 14,
+
+    elevation: 3,
+  },
+
+  dataRow: {
+    flexDirection: 'row',
+
+    justifyContent: 'space-between',
+
+    alignItems: 'center',
+
+    paddingVertical: 14,
+
+    borderBottomWidth: 1,
+
+    borderBottomColor: '#E5E7EB',
+  },
+
+  dataName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
+  },
+
+  dataValue: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#2563EB',
+  },
+
+  // =========================
+  // BOTTOM SPACE
+  // =========================
+
+  bottomSpace: {
+    height: 40,
+  },
+
 });
