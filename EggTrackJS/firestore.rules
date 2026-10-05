@@ -1,0 +1,207 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function ownerRole(role) { return role in ['owner', 'Owner', 'OWNER']; }
+    function staffRole(role) { return role in ['staff', 'Staff', 'STAFF']; }
+    function memberOf(businessId) {
+      return hasProfile()
+        && profile().get('businessId', '') == businessId
+        && (ownerRole(profile().role) || staffRole(profile().role))
+        && profile().get('disabled', false) != true
+        && get(/databases/$(database)/documents/businesses/$(businessId)).data.status == 'active';
+    }
+    function ownerOf(businessId) {
+      return memberOf(businessId) && ownerRole(profile().role);
+    }
+    function legacyOwner() {
+      return hasProfile()
+        && ownerRole(profile().role)
+        && profile().get('businessId', '') == ''
+        && profile().get('createdFromSignup', false) != true;
+    }
+    function migrationOwner() {
+      return hasProfile()
+        && ownerRole(profile().role)
+        && profile().businessId == request.auth.uid
+        && get(/databases/$(database)/documents/system/businessSetup).data.businessId == request.auth.uid
+        && get(/databases/$(database)/documents/system/businessSetup).data.ownerUid == request.auth.uid
+        && get(/databases/$(database)/documents/system/businessSetup).data.migrationStatus == 'pending';
+    }
+    function validEggCounts(data) {
+      return data.pullet is int && data.pullet >= 0
+        && data.small is int && data.small >= 0
+        && data.medium is int && data.medium >= 0
+        && data.large is int && data.large >= 0
+        && data.xlarge is int && data.xlarge >= 0
+        && data.jumbo is int && data.jumbo >= 0;
+    }
+    // FieldValue.increment may represent the resulting value as an integer
+    // or a double. Inventory remains non-negative either way; sale and
+    // production records themselves are still required to contain integers.
+    function validInventoryCounts(data) {
+      return data.pullet is number && data.pullet >= 0
+        && data.small is number && data.small >= 0
+        && data.medium is number && data.medium >= 0
+        && data.large is number && data.large >= 0
+        && data.xlarge is number && data.xlarge >= 0
+        && data.jumbo is number && data.jumbo >= 0;
+    }
+    function saleMatchesInventory(businessId, sale) {
+      let before = get(/databases/$(database)/documents/businesses/$(businessId)/inventory/main).data;
+      let after = getAfter(/databases/$(database)/documents/businesses/$(businessId)/inventory/main).data;
+      return validInventoryCounts(after)
+        && after.pullet == before.pullet - sale.pullet
+        && after.small == before.small - sale.small
+        && after.medium == before.medium - sale.medium
+        && after.large == before.large - sale.large
+        && after.xlarge == before.xlarge - sale.xlarge
+        && after.jumbo == before.jumbo - sale.jumbo;
+    }
+    function productionMatchesInventory(businessId, production) {
+      let before = get(/databases/$(database)/documents/businesses/$(businessId)/inventory/main).data;
+      let after = getAfter(/databases/$(database)/documents/businesses/$(businessId)/inventory/main).data;
+      return validInventoryCounts(after)
+        && after.pullet == before.pullet + production.pullet
+        && after.small == before.small + production.small
+        && after.medium == before.medium + production.medium
+        && after.large == before.large + production.large
+        && after.xlarge == before.xlarge + production.xlarge
+        && after.jumbo == before.jumbo + production.jumbo;
+    }
+    function noPendingMigration() {
+      return !exists(/databases/$(database)/documents/system/businessSetup)
+        || get(/databases/$(database)/documents/system/businessSetup).data.migrationStatus != 'pending';
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (
+        request.auth.uid == userId
+        || (ownerOf(resource.data.get('businessId', '')) && staffRole(resource.data.role))
+      );
+      allow create: if signedIn() && (
+        (request.auth.uid == userId
+          && ownerRole(request.resource.data.role)
+          && request.resource.data.businessId == userId
+          && request.resource.data.createdFromSignup == true
+          && noPendingMigration()
+          && getAfter(/databases/$(database)/documents/businesses/$(userId)).data.ownerUid == userId
+          && getAfter(/databases/$(database)/documents/businesses/$(userId)).data.status == 'active')
+        || (ownerOf(request.resource.data.businessId)
+          && staffRole(request.resource.data.role)
+          && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'businessId', 'disabled', 'createdAt'])
+          && request.resource.data.disabled != true)
+      );
+      allow update: if signedIn() && (
+        (request.auth.uid == userId && legacyOwner()
+          && ownerRole(request.resource.data.role)
+          && request.resource.data.businessId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['businessId']))
+        || (ownerOf(resource.data.businessId)
+          && staffRole(resource.data.role)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['disabled'])
+          && request.resource.data.disabled == true)
+      );
+      allow delete: if false;
+    }
+
+    match /businesses/{businessId} {
+      allow read: if memberOf(businessId) || (migrationOwner() && businessId == request.auth.uid);
+      allow create: if signedIn() && businessId == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && ((request.resource.data.status == 'active'
+          && noPendingMigration()
+          && ownerRole(getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.role)
+          && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.businessId == businessId)
+          || (legacyOwner()
+            && request.resource.data.status == 'migrating'
+            && getAfter(/databases/$(database)/documents/system/businessSetup).data.ownerUid == request.auth.uid
+            && getAfter(/databases/$(database)/documents/system/businessSetup).data.migrationStatus == 'pending'));
+      allow update: if migrationOwner() && businessId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'active';
+      allow delete: if false;
+
+      match /inventory/{inventoryId} {
+        allow read: if memberOf(businessId) || (migrationOwner() && businessId == request.auth.uid);
+        allow create, update: if (memberOf(businessId) || (migrationOwner() && businessId == request.auth.uid))
+          && inventoryId == 'main'
+          && validInventoryCounts(request.resource.data)
+          && request.resource.data.keys().hasOnly(['pullet', 'small', 'medium', 'large', 'xlarge', 'jumbo', 'updatedAt', 'updatedBy', 'updatedByEmail']);
+        allow delete: if false;
+      }
+      match /settings/{settingsId} {
+        allow read: if memberOf(businessId) || (migrationOwner() && businessId == request.auth.uid);
+        allow create, update: if (ownerOf(businessId) || (migrationOwner() && businessId == request.auth.uid)) && settingsId == 'main';
+        allow delete: if ownerOf(businessId) && settingsId == 'main';
+      }
+    }
+
+    match /system/businessSetup {
+      allow read: if migrationOwner();
+      allow create: if legacyOwner()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.businessId == request.auth.uid
+        && request.resource.data.migrationStatus == 'pending'
+        && !exists(/databases/$(database)/documents/system/businessSetup)
+        && getAfter(/databases/$(database)/documents/businesses/$(request.auth.uid)).data.status == 'migrating';
+      allow update: if migrationOwner()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['migrationStatus'])
+        && request.resource.data.migrationStatus == 'complete';
+      allow delete: if false;
+    }
+
+    match /productions/{recordId} {
+      allow read: if memberOf(resource.data.get('businessId', ''))
+        || (legacyOwner() && resource.data.get('businessId', '') in ['', request.auth.uid])
+        || (migrationOwner() && resource.data.get('businessId', '') in ['', request.auth.uid]);
+      allow create: if memberOf(request.resource.data.businessId)
+        && validEggCounts(request.resource.data)
+        && request.resource.data.totalEggs is int
+        && request.resource.data.date is string
+        && productionMatchesInventory(request.resource.data.businessId, request.resource.data);
+      allow update: if (ownerOf(resource.data.get('businessId', ''))
+          && request.resource.data.businessId == resource.data.get('businessId', ''))
+        || ((legacyOwner() || migrationOwner())
+          && resource.data.get('businessId', '') in ['', request.auth.uid]
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['businessId'])
+          && request.resource.data.businessId == request.auth.uid);
+      allow delete: if ownerOf(resource.data.get('businessId', ''));
+    }
+    match /sales/{recordId} {
+      allow read: if memberOf(resource.data.get('businessId', ''))
+        || (legacyOwner() && resource.data.get('businessId', '') in ['', request.auth.uid])
+        || (migrationOwner() && resource.data.get('businessId', '') in ['', request.auth.uid]);
+      allow create: if memberOf(request.resource.data.businessId)
+        && validEggCounts(request.resource.data)
+        && request.resource.data.totalEggs is int
+        && request.resource.data.totalAmount is number
+        && request.resource.data.totalAmount >= 0
+        && request.resource.data.date is string
+        && saleMatchesInventory(request.resource.data.businessId, request.resource.data);
+      allow update: if (ownerOf(resource.data.get('businessId', ''))
+          && request.resource.data.businessId == resource.data.get('businessId', ''))
+        || ((legacyOwner() || migrationOwner())
+          && resource.data.get('businessId', '') in ['', request.auth.uid]
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['businessId'])
+          && request.resource.data.businessId == request.auth.uid);
+      allow delete: if ownerOf(resource.data.get('businessId', ''));
+    }
+
+    match /inventory/{inventoryId} {
+      allow read: if legacyOwner() || migrationOwner();
+      allow write: if false;
+    }
+    match /settings/{settingsId} {
+      allow read: if legacyOwner() || migrationOwner();
+      allow write: if false;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
