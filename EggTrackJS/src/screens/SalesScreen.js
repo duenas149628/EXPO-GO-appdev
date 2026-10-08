@@ -52,6 +52,9 @@ const emptyValues = {
   jumbo: '',
 };
 
+const EGG_UNITS = ['Eggs', 'Trays'];
+const UNSPECIFIED_COLOR_BRAND = 'Unspecified';
+
 export default function SalesScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(baseStyles);
@@ -65,11 +68,35 @@ export default function SalesScreen() {
   const [inputMode, setInputMode] =
     useState('eggs');
 
-  const [quantities, setQuantities] =
+  const [selectedSizeKey, setSelectedSizeKey] =
+    useState(EGG_SIZES[0].key);
+
+  const [isSizeDropdownOpen, setIsSizeDropdownOpen] =
+    useState(false);
+
+  const [eggQuantities, setEggQuantities] =
     useState(emptyValues);
 
-  const [prices, setPrices] =
+  const [trayQuantities, setTrayQuantities] =
     useState(emptyValues);
+
+  const [colorBrand, setColorBrand] = useState(UNSPECIFIED_COLOR_BRAND);
+  const [isColorBrandDropdownOpen, setIsColorBrandDropdownOpen] = useState(false);
+  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
+  const quantities = inputMode === 'trays' ? trayQuantities : eggQuantities;
+  const colorBrandOptions = [...new Set([
+    UNSPECIFIED_COLOR_BRAND,
+    ...sales.flatMap(record => [record.colorBrand, record.color, record.brand]
+      .filter(value => typeof value === 'string' && value.trim())
+      .map(value => value.trim())),
+  ])];
+
+  const [eggPrices, setEggPrices] =
+    useState(emptyValues);
+
+  const [trayPrices, setTrayPrices] =
+    useState(emptyValues);
+  const prices = inputMode === 'trays' ? trayPrices : eggPrices;
   const [isSaving, setIsSaving] = useState(false);
 
 
@@ -82,12 +109,8 @@ export default function SalesScreen() {
     value
   ) => {
 
-    setQuantities(
-      previous => ({
-        ...previous,
-        [key]: value,
-      })
-    );
+    const setActiveQuantities = inputMode === 'trays' ? setTrayQuantities : setEggQuantities;
+    setActiveQuantities(previous => ({ ...previous, [key]: value }));
   };
 
 
@@ -105,12 +128,8 @@ export default function SalesScreen() {
       ? `${whole}.${decimalParts.join('')}`
       : whole;
 
-    setPrices(
-      previous => ({
-        ...previous,
-        [key]: normalized,
-      })
-    );
+    const setActivePrices = inputMode === 'trays' ? setTrayPrices : setEggPrices;
+    setActivePrices(previous => ({ ...previous, [key]: normalized }));
   };
 
 
@@ -483,6 +502,21 @@ export default function SalesScreen() {
 
       inputMode,
 
+      unit: inputMode === 'trays' ? 'Trays' : 'Eggs',
+      colorBrand,
+      eggSize: EGG_SIZES.filter(size => sale[size.key] > 0).map(size => size.label).join(', '),
+      quantity: Object.values(quantities).reduce((sum, value) => sum + getNumber(value), 0),
+      equivalentEggQuantity: sale.totalEggs,
+      eggSizes: EGG_SIZES.filter(size => sale[size.key] > 0).map(size => ({
+        key: size.key,
+        label: size.label,
+        quantity: getNumber(quantities[size.key]),
+        unit: inputMode === 'trays' ? 'Trays' : 'Eggs',
+        equivalentEggQuantity: sale[size.key],
+        price: getNumber(prices[size.key]),
+        total: getNumber(quantities[size.key]) * getNumber(prices[size.key]),
+      })),
+
 
       quantities: {
 
@@ -594,13 +628,12 @@ export default function SalesScreen() {
     // Clear fields
     // ---------------------------------------------------
 
-    setQuantities(
-      emptyValues
-    );
+    setEggQuantities(emptyValues);
+    setTrayQuantities(emptyValues);
 
-    setPrices(
-      emptyValues
-    );
+    setEggPrices(emptyValues);
+    setTrayPrices(emptyValues);
+    setColorBrand(UNSPECIFIED_COLOR_BRAND);
     setIsSaving(false);
   };
 
@@ -611,6 +644,14 @@ export default function SalesScreen() {
 
   const preview =
     calculateSale();
+
+  const selectedSize = EGG_SIZES.find(
+    size => size.key === selectedSizeKey
+  ) || EGG_SIZES[0];
+  const selectedSizeKeyValue = selectedSize.key;
+  const selectedQuantity = getNumber(quantities[selectedSizeKeyValue]);
+  const selectedPrice = getNumber(prices[selectedSizeKeyValue]);
+  const selectedAmount = selectedQuantity * selectedPrice;
 
 
   // =====================================================
@@ -636,72 +677,39 @@ export default function SalesScreen() {
       </Text>
 
 
-      {/* MODE TOGGLE */}
-
-      <View
-        style={
-          styles.modeContainer
-        }
+      <Text style={styles.inputLabel}>Unit</Text>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isUnitDropdownOpen }}
+        style={styles.sizeDropdownButton}
+        onPress={() => setIsUnitDropdownOpen(open => !open)}
       >
-
-        <TouchableOpacity
-          style={[
-            styles.modeButton,
-
-            inputMode === 'eggs' &&
-              styles.activeModeButton,
-          ]}
-
-          onPress={() =>
-            setInputMode(
-              'eggs'
-            )
-          }
-        >
-
-          <Text
-            style={[
-              styles.modeText,
-
-              inputMode === 'eggs' &&
-                styles.activeModeText,
-            ]}
-          >
-            Eggs
-          </Text>
-
-        </TouchableOpacity>
-
-
-        <TouchableOpacity
-          style={[
-            styles.modeButton,
-
-            inputMode === 'trays' &&
-              styles.activeModeButton,
-          ]}
-
-          onPress={() =>
-            setInputMode(
-              'trays'
-            )
-          }
-        >
-
-          <Text
-            style={[
-              styles.modeText,
-
-              inputMode === 'trays' &&
-                styles.activeModeText,
-            ]}
-          >
-            Trays
-          </Text>
-
-        </TouchableOpacity>
-
-      </View>
+        <Text style={styles.sizeDropdownText}>{inputMode === 'trays' ? 'Trays' : 'Eggs'}</Text>
+        <Text style={styles.dropdownChevron}>{isUnitDropdownOpen ? '^' : 'v'}</Text>
+      </TouchableOpacity>
+      {isUnitDropdownOpen && (
+        <View style={styles.sizeDropdownMenu}>
+          {EGG_UNITS.map(unit => {
+            const unitMode = unit.toLowerCase();
+            const selected = inputMode === unitMode;
+            return (
+              <TouchableOpacity
+                key={unit}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                style={[styles.sizeDropdownOption, selected && styles.selectedSizeDropdownOption]}
+                onPress={() => {
+                  setInputMode(unitMode);
+                  setIsUnitDropdownOpen(false);
+                }}
+              >
+                <Text style={[styles.sizeDropdownOptionText, selected && styles.selectedSizeDropdownOptionText]}>{unit}</Text>
+                <Text style={styles.sizeDropdownAvailability}>{unit === 'Trays' ? '1 tray = 30 eggs' : 'Individual eggs'}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
 
       <Text
@@ -717,40 +725,89 @@ export default function SalesScreen() {
 
       {/* EGG SIZE INPUTS */}
 
-      {EGG_SIZES.map(
-        size => {
-
-          const key =
-            size.key;
-
-          const quantity =
-            getNumber(
-              quantities[key]
-            );
-
-          const price =
-            getNumber(
-              prices[key]
-            );
-
-          const amount =
-            quantity * price;
-
-
-          return (
-            <View
-              style={
-                styles.sizeCard
-              }
-              key={key}
+      <Text style={styles.inputLabel}>Color / Brand</Text>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isColorBrandDropdownOpen }}
+        style={styles.sizeDropdownButton}
+        onPress={() => setIsColorBrandDropdownOpen(open => !open)}
+      >
+        <Text style={styles.sizeDropdownText}>{colorBrand}</Text>
+        <Text style={styles.dropdownChevron}>{isColorBrandDropdownOpen ? '^' : 'v'}</Text>
+      </TouchableOpacity>
+      {isColorBrandDropdownOpen && (
+        <View style={styles.sizeDropdownMenu}>
+          {colorBrandOptions.map(option => (
+            <TouchableOpacity
+              key={option}
+              accessibilityRole="button"
+              accessibilityState={{ selected: option === colorBrand }}
+              style={[styles.sizeDropdownOption, option === colorBrand && styles.selectedSizeDropdownOption]}
+              onPress={() => {
+                setColorBrand(option);
+                setIsColorBrandDropdownOpen(false);
+              }}
             >
+              <Text style={[styles.sizeDropdownOptionText, option === colorBrand && styles.selectedSizeDropdownOptionText]}>
+                {option}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      <Text style={styles.inputLabel}>Egg Size</Text>
+
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isSizeDropdownOpen }}
+        style={styles.sizeDropdownButton}
+        onPress={() => setIsSizeDropdownOpen(open => !open)}
+      >
+        <Text style={styles.sizeDropdownText}>{selectedSize.label}</Text>
+        <Text style={styles.dropdownChevron}>{isSizeDropdownOpen ? '^' : 'v'}</Text>
+      </TouchableOpacity>
+
+      {isSizeDropdownOpen && (
+        <View style={styles.sizeDropdownMenu}>
+          {EGG_SIZES.map(size => (
+            <TouchableOpacity
+              key={size.key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: size.key === selectedSizeKey }}
+              style={[
+                styles.sizeDropdownOption,
+                size.key === selectedSizeKey && styles.selectedSizeDropdownOption,
+              ]}
+              onPress={() => {
+                setSelectedSizeKey(size.key);
+                setIsSizeDropdownOpen(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.sizeDropdownOptionText,
+                  size.key === selectedSizeKey && styles.selectedSizeDropdownOptionText,
+                ]}
+              >
+                {size.label}
+              </Text>
+              <Text style={styles.sizeDropdownAvailability}>
+                {inventory[size.key]} eggs
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      <View style={styles.sizeCard}>
 
               <Text
                 style={
                   styles.sizeTitle
                 }
               >
-                {size.label}
+                {selectedSize.label}
               </Text>
 
 
@@ -760,7 +817,7 @@ export default function SalesScreen() {
                 }
               >
                 Available:{' '}
-                {inventory[key]} eggs
+                {inventory[selectedSizeKeyValue]} eggs
               </Text>
 
 
@@ -787,13 +844,13 @@ export default function SalesScreen() {
                 keyboardType="numeric"
 
                 value={
-                  quantities[key]
+                  quantities[selectedSizeKeyValue]
                 }
 
                 onChangeText={
                   value =>
                     updateValue(
-                      key,
+                      selectedSizeKeyValue,
                       value.replace(
                         /[^0-9]/g,
                         ''
@@ -826,13 +883,13 @@ export default function SalesScreen() {
                 keyboardType="decimal-pad"
 
                 value={
-                  prices[key]
+                  prices[selectedSizeKeyValue]
                 }
 
                 onChangeText={
                   value =>
                     updatePrice(
-                      key,
+                      selectedSizeKeyValue,
                       value.replace(
                         /[^0-9.]/g,
                         ''
@@ -844,16 +901,16 @@ export default function SalesScreen() {
 
               {inputMode ===
                 'trays' &&
-                quantity > 0 && (
+                selectedQuantity > 0 && (
 
                   <Text
                     style={
                       styles.conversionText
                     }
                   >
-                    {quantity} tray(s)
+                    {selectedQuantity} tray(s)
                     {' = '}
-                    {quantity * 30}
+                    {selectedQuantity * 30}
                     {' eggs'}
                   </Text>
 
@@ -866,13 +923,10 @@ export default function SalesScreen() {
                 }
               >
                 Amount: ₱
-                {amount.toFixed(2)}
+                {selectedAmount.toFixed(2)}
               </Text>
 
-            </View>
-          );
-        }
-      )}
+      </View>
 
 
       {/* SALE SUMMARY */}
@@ -1034,13 +1088,28 @@ export default function SalesScreen() {
               )}
 
 
+              <Text style={styles.historyText}>
+                Egg Size: {sale.eggSizes?.map(size => size.label || size.key).join(', ')
+                  || EGG_SIZES.filter(size => Number(sale[size.key] || 0) > 0).map(size => size.label).join(', ')
+                  || 'Not recorded'}
+              </Text>
+
+              <Text style={styles.historyText}>
+                Color / Brand: {sale.colorBrand || sale.color || sale.brand || UNSPECIFIED_COLOR_BRAND}
+              </Text>
+
+
               <Text
                 style={
                   styles.historyText
                 }
               >
-                Eggs Sold:{' '}
-                {sale.totalEggs}
+                Quantity: {sale.quantity ?? Object.values(sale.quantities || {}).reduce((sum, value) => sum + Number(value || 0), 0)}{' '}
+                {sale.unit || (sale.inputMode === 'trays' ? 'Trays' : 'Eggs')}
+              </Text>
+
+              <Text style={styles.historyText}>
+                Equivalent: {sale.equivalentEggQuantity ?? sale.totalEggs ?? 0} eggs
               </Text>
 
 
@@ -1055,19 +1124,6 @@ export default function SalesScreen() {
                 ).toFixed(2)}
               </Text>
 
-
-              <Text
-                style={
-                  styles.historyText
-                }
-              >
-                Method:{' '}
-
-                {sale.inputMode ===
-                'trays'
-                  ? 'Trays'
-                  : 'Eggs'}
-              </Text>
 
             </View>
 
@@ -1108,39 +1164,71 @@ const baseStyles = StyleSheet.create({
     marginBottom: 15,
   },
 
-  modeContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#E5E7EB',
-    borderRadius: 10,
-    padding: 4,
-    marginBottom: 8,
-  },
-
-  modeButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-
-  activeModeButton: {
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
-  },
-
-  modeText: {
-    fontWeight: 'bold',
-    color: '#6B7280',
-  },
-
-  activeModeText: {
-    color: '#111827',
-  },
-
   modeDescription: {
     fontSize: 13,
     color: '#6B7280',
     marginBottom: 15,
+  },
+
+  sizeDropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    marginBottom: 10,
+  },
+
+  sizeDropdownText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  dropdownChevron: {
+    color: '#6B7280',
+    fontSize: 12,
+  },
+
+  sizeDropdownMenu: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+
+  sizeDropdownOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+
+  selectedSizeDropdownOption: {
+    backgroundColor: '#E7F2EA',
+  },
+
+  sizeDropdownOptionText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+
+  selectedSizeDropdownOptionText: {
+    color: '#2D6A4F',
+    fontWeight: '700',
+  },
+
+  sizeDropdownAvailability: {
+    color: '#6B7280',
+    fontSize: 13,
   },
 
   sizeCard: {
