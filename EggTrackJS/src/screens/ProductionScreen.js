@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+﻿import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,8 @@ export default function ProductionScreen() {
   const [inputMode, setInputMode] = useState('eggs');
   const [isSaving, setIsSaving] = useState(false);
   const [showAllProductions, setShowAllProductions] = useState(false);
+  const [productionDateFilter, setProductionDateFilter] = useState('');
+  const [productionSizeFilter, setProductionSizeFilter] = useState('');
 
   const [pullet, setPullet] = useState('');
   const [small, setSmall] = useState('');
@@ -46,6 +48,19 @@ export default function ProductionScreen() {
   const { addProduction, productions, isOnline } = useContext(EggContext);
 
   const getEggs = value => (Number(value) || 0) * (inputMode === 'trays' ? EGGS_PER_TRAY : 1);
+  const productionSizes = [
+    ['pullet', 'Pullet'], ['small', 'Small'], ['medium', 'Medium'],
+    ['large', 'Large'], ['xlarge', 'X-Large'], ['jumbo', 'Jumbo'],
+  ];
+  const filteredProductions = productions.filter(record => {
+    const recordDate = String(record.date || '');
+    const matchesDate = !productionDateFilter.trim() ||
+      recordDate.toLowerCase().includes(productionDateFilter.trim().toLowerCase()) ||
+      formatHistoryDate(recordDate).toLowerCase().includes(productionDateFilter.trim().toLowerCase());
+    const matchesSize = !productionSizeFilter || Number(record[productionSizeFilter] || 0) > 0;
+    return matchesDate && matchesSize;
+  });
+
 
   const pulletEggs = getEggs(pullet);
   const smallEggs = getEggs(small);
@@ -310,26 +325,61 @@ export default function ProductionScreen() {
           Production History
         </Text>
 
-        {productions.length === 0 ? (
+        <View style={styles.filterCard}>
+          <Text style={styles.filterLabel}>Filter by date</Text>
+          <TextInput
+            accessibilityLabel="Filter production history by date"
+            style={styles.filterInput}
+            value={productionDateFilter}
+            onChangeText={setProductionDateFilter}
+            placeholder="YYYY-MM-DD or date"
+            placeholderTextColor={colors.muted}
+            autoCapitalize="none"
+          />
+          <Text style={styles.filterLabel}>Filter by egg size</Text>
+          <View style={styles.filterOptions}>
+            <TouchableOpacity
+              style={[styles.filterChip, !productionSizeFilter && styles.activeFilterChip]}
+              onPress={() => setProductionSizeFilter('')}
+              accessibilityRole="button"
+              accessibilityState={{ selected: !productionSizeFilter }}
+            ><Text style={[styles.filterChipText, !productionSizeFilter && styles.activeFilterChipText]}>All sizes</Text></TouchableOpacity>
+            {productionSizes.map(([key, label]) => (
+              <TouchableOpacity
+                key={key}
+                style={[styles.filterChip, productionSizeFilter === key && styles.activeFilterChip]}
+                onPress={() => setProductionSizeFilter(current => current === key ? '' : key)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: productionSizeFilter === key }}
+              ><Text style={[styles.filterChipText, productionSizeFilter === key && styles.activeFilterChipText]}>{label}</Text></TouchableOpacity>
+            ))}
+          </View>
+          {(productionDateFilter || productionSizeFilter) ? (
+            <TouchableOpacity onPress={() => { setProductionDateFilter(''); setProductionSizeFilter(''); }}>
+              <Text style={styles.clearFilterText}>Clear filters</Text>
+            </TouchableOpacity>
+          ) : null}
+          <Text style={styles.filterResultText}>{filteredProductions.length} of {productions.length} records</Text>
+        </View>
+
+        {filteredProductions.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              No production recorded yet.
-            </Text>
+            <Text style={styles.emptyText}>{productions.length === 0 ? 'No production recorded yet.' : 'No production records match these filters.'}</Text>
           </View>
         ) : (
           <View style={styles.historyGrid}>
-          {productions.slice(0, showAllProductions ? productions.length : INITIAL_HISTORY_COUNT).map((record, index) => (
+          {filteredProductions.slice(0, showAllProductions ? filteredProductions.length : INITIAL_HISTORY_COUNT).map((record, index) => (
             <View
               key={record.firebaseId || `production-${record.id}-${index}`}
               style={styles.historyCard}
             >
               <Text style={styles.historyEggs}>
-                {record.totalEggs} eggs
+                {Number(record.totalEggs || 0)} eggs
               </Text>
 
               <Text style={styles.historyDetails}>
-                {Math.floor(record.totalEggs / 30)} trays +{' '}
-                {record.totalEggs % 30} loose eggs
+                {Math.floor(Number(record.totalEggs || 0) / 30)} trays +{' '}
+                {Number(record.totalEggs || 0) % 30} loose eggs
               </Text>
 
               <Text style={[styles.sizeDetails, { color: colors.secondaryText }]}>
@@ -346,9 +396,9 @@ export default function ProductionScreen() {
           ))}
           </View>
         )}
-        {productions.length > INITIAL_HISTORY_COUNT && (
+        {filteredProductions.length > INITIAL_HISTORY_COUNT && (
           <TouchableOpacity style={styles.historyToggle} onPress={() => setShowAllProductions(value => !value)}>
-            <Text style={styles.historyToggleText}>{showAllProductions ? 'View Less' : 'View More'}</Text>
+            <Text style={styles.historyToggleText}>{showAllProductions ? 'View Less' : 'View All'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -544,4 +594,14 @@ const baseStyles = StyleSheet.create({
   sizeDetails: { fontSize: 10, lineHeight: 14, marginTop: 4 },
   historyToggle: { alignSelf: 'center', paddingHorizontal: 18, paddingVertical: 10, marginBottom: 18 },
   historyToggleText: { color: '#2D6A4F', fontSize: 14, fontWeight: '700' },
+  filterCard: { backgroundColor: '#FFFFFF', padding: 14, borderRadius: 12, marginBottom: 12, elevation: 1 },
+  filterLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 7 },
+  filterInput: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12, color: '#111827' },
+  filterOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  filterChip: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 16, paddingHorizontal: 11, paddingVertical: 7, backgroundColor: '#FFFFFF' },
+  activeFilterChip: { backgroundColor: '#E7F2EA', borderColor: '#2D6A4F' },
+  filterChipText: { color: '#4B5563', fontSize: 12, fontWeight: '600' },
+  activeFilterChipText: { color: '#2D6A4F' },
+  clearFilterText: { color: '#2D6A4F', fontWeight: '700', marginTop: 12 },
+  filterResultText: { color: '#6B7280', fontSize: 12, marginTop: 10 },
 });

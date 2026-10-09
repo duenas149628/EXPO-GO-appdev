@@ -136,23 +136,23 @@ export default function DashboardScreen({ navigation }) {
 
       <View style={styles.cardRow}>
         <SummaryCard
-          label="Inventory"
-          value={totalInventory}
-          unit="eggs"
+          label="Eggs Sold"
+          value={totalEggsSold}
+          unit="eggs sold"
         />
 
         <SummaryCard
-          label="Eggs Sold"
-          value={totalEggsSold}
-          unit="eggs"
+          label="Revenue"
+          value={`PHP ${totalRevenue.toLocaleString()}`}
+          unit="total sales"
         />
       </View>
 
       <View style={styles.cardRow}>
         <SummaryCard
-          label="Revenue"
-          value={`₱${totalRevenue}`}
-          unit="total sales"
+          label="Inventory"
+          value={totalInventory}
+          unit="eggs"
         />
 
         <SummaryCard

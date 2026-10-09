@@ -895,7 +895,7 @@ export default function SalesScreen() {
               >
                 Revenue: ₱
                 {Number(
-                  sale.totalAmount
+                  sale.totalAmount || 0
                 ).toFixed(2)}
               </Text>
 
@@ -912,7 +912,7 @@ export default function SalesScreen() {
       )}
       {sales.length > INITIAL_HISTORY_COUNT && (
         <TouchableOpacity style={styles.historyToggle} onPress={() => setShowAllSales(value => !value)}>
-          <Text style={styles.historyToggleText}>{showAllSales ? 'View Less' : 'View More'}</Text>
+          <Text style={styles.historyToggleText}>{showAllSales ? 'View Less' : 'View All'}</Text>
         </TouchableOpacity>
       )}
 
