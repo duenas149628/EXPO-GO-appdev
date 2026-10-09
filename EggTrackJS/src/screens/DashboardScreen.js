@@ -202,7 +202,7 @@ export default function DashboardScreen({ navigation }) {
         Stock Alert
       </Text>
 
-      <View style={styles.alertCard}>
+      <View style={[styles.alertCard, lowStockItems.length > 0 && styles.lowStockAlertCard]}>
 
         {lowStockItems.length === 0 ? (
           <>
@@ -216,8 +216,8 @@ export default function DashboardScreen({ navigation }) {
           </>
         ) : (
           <>
-            <Text style={styles.alertTitle}>
-              Low Stock Detected
+            <Text style={[styles.alertTitle, styles.lowStockAlertTitle]}>
+              ! Low Stock Detected
             </Text>
 
             <Text style={styles.alertText}>
@@ -408,9 +408,20 @@ const baseStyles = StyleSheet.create({
     elevation: 2,
   },
 
+  lowStockAlertCard: {
+    backgroundColor: '#FFF1F1',
+    borderColor: '#C84D4D',
+    borderWidth: 2,
+    borderLeftWidth: 5,
+  },
+
   alertTitle: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  lowStockAlertTitle: {
+    color: '#B43C3C',
   },
 
   alertText: {

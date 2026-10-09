@@ -117,6 +117,10 @@ export default function InventoryScreen() {
               {inventory.pullet} eggs
             </Text>
 
+            <Text style={styles.trayQuantity}>
+              {Math.floor(inventory.pullet / 30)} trays + {inventory.pullet % 30} loose
+            </Text>
+
             <Text style={styles.threshold}>
               Low-stock threshold: {thresholds.pullet}
             </Text>
@@ -145,6 +149,10 @@ export default function InventoryScreen() {
 
             <Text style={styles.quantity}>
               {inventory.small} eggs
+            </Text>
+
+            <Text style={styles.trayQuantity}>
+              {Math.floor(inventory.small / 30)} trays + {inventory.small % 30} loose
             </Text>
 
             <Text style={styles.threshold}>
@@ -177,6 +185,10 @@ export default function InventoryScreen() {
               {inventory.medium} eggs
             </Text>
 
+            <Text style={styles.trayQuantity}>
+              {Math.floor(inventory.medium / 30)} trays + {inventory.medium % 30} loose
+            </Text>
+
             <Text style={styles.threshold}>
               Low-stock threshold: {thresholds.medium}
             </Text>
@@ -205,6 +217,10 @@ export default function InventoryScreen() {
 
             <Text style={styles.quantity}>
               {inventory.large} eggs
+            </Text>
+
+            <Text style={styles.trayQuantity}>
+              {Math.floor(inventory.large / 30)} trays + {inventory.large % 30} loose
             </Text>
 
             <Text style={styles.threshold}>
@@ -237,6 +253,10 @@ export default function InventoryScreen() {
               {inventory.xlarge} eggs
             </Text>
 
+            <Text style={styles.trayQuantity}>
+              {Math.floor(inventory.xlarge / 30)} trays + {inventory.xlarge % 30} loose
+            </Text>
+
             <Text style={styles.threshold}>
               Low-stock threshold: {thresholds.xlarge}
             </Text>
@@ -265,6 +285,10 @@ export default function InventoryScreen() {
 
             <Text style={styles.quantity}>
               {inventory.jumbo} eggs
+            </Text>
+
+            <Text style={styles.trayQuantity}>
+              {Math.floor(inventory.jumbo / 30)} trays + {inventory.jumbo % 30} loose
             </Text>
 
             <Text style={styles.threshold}>
@@ -379,6 +403,13 @@ const baseStyles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 8,
+  },
+
+  trayQuantity: {
+    color: '#2D6A4F',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 3,
   },
 
   threshold: {

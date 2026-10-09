@@ -1,17 +1,66 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 
 import { EggContext } from '../EggContext';
 import { useThemedStyles } from '../ThemeContext';
 
+const RECORD_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'sale', label: 'Sales' },
+  { key: 'production', label: 'Production' },
+];
+
+const EGG_SIZES = [
+  ['pullet', 'Pullet'],
+  ['small', 'Small'],
+  ['medium', 'Medium'],
+  ['large', 'Large'],
+  ['xlarge', 'X-Large'],
+  ['jumbo', 'Jumbo'],
+];
+
+function formatSaleSizeDetails(record) {
+  const sizeDetails = Array.isArray(record.eggSizes) && record.eggSizes.length > 0
+    ? record.eggSizes.map(size => ({
+      key: size.key,
+      label: size.label || size.key,
+      quantity: Number(size.quantity || 0),
+      unit: size.unit || record.unit || (record.inputMode === 'trays' ? 'Trays' : 'Eggs'),
+      eggs: Number(size.equivalentEggQuantity ?? record[size.key] ?? 0),
+    }))
+    : EGG_SIZES
+      .filter(([key]) => Number(record[key] || 0) > 0)
+      .map(([key, label]) => {
+        const eggs = Number(record[key] || 0);
+        const unit = record.unit || (record.inputMode === 'trays' ? 'Trays' : 'Eggs');
+        return {
+          key,
+          label,
+          quantity: Number(record.quantities?.[key] ?? (unit === 'Trays' ? eggs / 30 : eggs)),
+          unit,
+          eggs,
+        };
+      });
+
+  return sizeDetails.map(size => {
+    const unit = size.unit.toLowerCase();
+    const quantityDetails = unit === 'trays'
+      ? `${size.quantity} trays (${size.eggs} eggs)`
+      : `${size.eggs} eggs (${Math.floor(size.eggs / 30)} trays + ${size.eggs % 30} loose)`;
+    return `${size.label}: ${quantityDetails}`;
+  }).join(' · ');
+}
+
 export default function LedgerScreen() {
   const styles = useThemedStyles(baseStyles);
   const { sales, productions } = useContext(EggContext);
+  const [recordFilter, setRecordFilter] = useState('all');
 
   const totalRevenue = useMemo(
     () => sales.reduce(
@@ -32,6 +81,10 @@ export default function LedgerScreen() {
     ...productions.map((record, index) => ({ ...record, kind: 'production', recordKey: record.firebaseId || `production-${record.id}-${index}` })),
     ...sales.map((record, index) => ({ ...record, kind: 'sale', recordKey: record.firebaseId || `sale-${record.id}-${index}` })),
   ].sort((a, b) => `${b.date || ''}-${b.id || ''}`.localeCompare(`${a.date || ''}-${a.id || ''}`)), [productions, sales]);
+  const visibleRecords = useMemo(
+    () => records.filter(record => recordFilter === 'all' || record.kind === recordFilter),
+    [records, recordFilter]
+  );
 
   const totalTrays = Math.floor(totalEggsSold / 30);
   const looseEggs = totalEggsSold % 30;
@@ -86,12 +139,32 @@ export default function LedgerScreen() {
       </View>
 
       <Text style={styles.sectionTitle}>Transactions</Text>
+      <View style={styles.filterRow}>
+        {RECORD_FILTERS.map(filter => {
+          const selected = recordFilter === filter.key;
+          return (
+            <TouchableOpacity
+              key={filter.key}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              onPress={() => setRecordFilter(filter.key)}
+              style={[styles.filterButton, selected && styles.activeFilterButton]}
+            >
+              <Text style={[styles.filterText, selected && styles.activeFilterText]}>
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-      {records.length === 0 ? (
+      {visibleRecords.length === 0 ? (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No production or sales recorded yet.</Text>
+          <Text style={styles.emptyText}>
+            {records.length === 0 ? 'No production or sales recorded yet.' : `No ${recordFilter} records found.`}
+          </Text>
         </View>
-      ) : records.map(record => (
+      ) : visibleRecords.map(record => (
         <View key={record.recordKey} style={styles.transactionCard}>
           <View style={styles.transactionHeader}>
             <Text style={styles.date}>{record.date}</Text>
@@ -106,7 +179,10 @@ export default function LedgerScreen() {
           </Text>
           <Text style={styles.trayText}>{formatEggsAsTrays(Number(record.totalEggs || 0))}</Text>
           {record.kind === 'sale' && (
-            <Text style={styles.method}>Method: {record.inputMode === 'trays' ? 'Trays' : 'Eggs'}</Text>
+            <>
+              <Text style={styles.method}>Egg sizes: {formatSaleSizeDetails(record) || 'Not recorded'}</Text>
+              <Text style={styles.method}>Method: {record.inputMode === 'trays' ? 'Trays' : 'Eggs'}</Text>
+            </>
           )}
         </View>
       ))}
@@ -175,6 +251,37 @@ const baseStyles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+
+  filterRow: {
+    flexDirection: 'row',
+    marginBottom: 14,
+  },
+
+  filterButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginHorizontal: 3,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+  },
+
+  activeFilterButton: {
+    backgroundColor: '#2D6A4F',
+    borderColor: '#2D6A4F',
+  },
+
+  filterText: {
+    color: '#536258',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  activeFilterText: {
+    color: '#FFFFFF',
   },
 
   transactionCard: {

@@ -17,7 +17,7 @@ import {
 
 import { createUserWithEmailAndPassword, deleteUser, signOut } from 'firebase/auth';
 import { collection, doc, getDocs, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
-import { auth, db, staffProvisioningAuth } from '../../firebaseConfig';
+import { db, staffProvisioningAuth } from '../../firebaseConfig';
 
 import { EggContext } from '../EggContext';
 import { useThemedStyles } from '../ThemeContext';
@@ -263,28 +263,6 @@ export default function SettingsScreen() {
   };
 
 
-  // =====================================================
-  // LOGOUT
-  // =====================================================
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-
-    } catch (error) {
-      console.log(
-        'Logout error:',
-        error
-      );
-
-      Alert.alert(
-        'Logout Failed',
-        'Unable to log out. Please try again.'
-      );
-    }
-  };
-
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
@@ -502,15 +480,6 @@ export default function SettingsScreen() {
         </View>
 
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          <Text style={styles.logoutButtonText}>
-            Logout
-          </Text>
-        </TouchableOpacity>
-
       </View>
     </ScrollView>
   );
@@ -615,19 +584,6 @@ const baseStyles = StyleSheet.create({
     marginVertical: 4,
   },
 
-  logoutButton: {
-    backgroundColor: '#DC2626',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 30,
-  },
-
-  logoutButtonText: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
   staffSection: { marginTop: 20, marginBottom: 20 },
   priceSettingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   priceSettingLabel: { flex: 1, color: '#374151', fontWeight: '600' },

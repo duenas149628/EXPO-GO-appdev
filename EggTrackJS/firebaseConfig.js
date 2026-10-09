@@ -1,5 +1,6 @@
 import { getApps, initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { Platform } from 'react-native';
 import {
   initializeAuth,
   getReactNativePersistence,
@@ -31,10 +32,9 @@ const getOrInitializeAuth = (authApp, persistence) => {
   }
 };
 
-export const auth = getOrInitializeAuth(
-  app,
-  getReactNativePersistence(AsyncStorage)
-);
+export const auth = Platform.OS === 'web'
+  ? getAuth(app)
+  : getOrInitializeAuth(app, getReactNativePersistence(AsyncStorage));
 
 // A secondary, in-memory Auth instance creates staff logins without signing
 // the Owner out of the primary app session. It requires no server functions.
