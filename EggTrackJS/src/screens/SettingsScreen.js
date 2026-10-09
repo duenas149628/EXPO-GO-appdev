@@ -22,11 +22,22 @@ import { auth, db, staffProvisioningAuth } from '../../firebaseConfig';
 import { EggContext } from '../EggContext';
 import { useThemedStyles } from '../ThemeContext';
 
+const PRICE_SIZE_OPTIONS = [
+  ['pullet', 'Pullet'],
+  ['small', 'Small'],
+  ['medium', 'Medium'],
+  ['large', 'Large'],
+  ['xlarge', 'X-Large'],
+  ['jumbo', 'Jumbo'],
+];
+
 export default function SettingsScreen() {
   const styles = useThemedStyles(baseStyles);
   const {
     thresholds,
     updateThresholds,
+    salePrices,
+    updateSalePrices,
     role,
     businessId,
   } = useContext(EggContext);
@@ -34,6 +45,7 @@ export default function SettingsScreen() {
   const [staffName, setStaffName] = useState('');
   const [staffEmail, setStaffEmail] = useState('');
   const [staffPassword, setStaffPassword] = useState('');
+  const [showStaffPassword, setShowStaffPassword] = useState(false);
   const [staffAccounts, setStaffAccounts] = useState([]);
   const [isManagingStaff, setIsManagingStaff] = useState(false);
 
@@ -109,17 +121,19 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleDisableStaff = uid => Alert.alert(
-    'Disable staff account?',
-    'This blocks access to the business in EggTrack. Their Firebase credentials remain active.',
+  const handleSetStaffDisabled = (uid, disabled) => Alert.alert(
+    disabled ? 'Disable staff account?' : 'Enable staff account?',
+    disabled
+      ? 'This blocks access to the business in EggTrack. Their Firebase credentials remain active.'
+      : 'This restores the staff member’s access to the business in EggTrack.',
     [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Disable', style: 'destructive', onPress: async () => {
+      { text: disabled ? 'Disable' : 'Enable', style: disabled ? 'destructive' : 'default', onPress: async () => {
         try {
-          await updateDoc(doc(db, 'users', uid), { disabled: true });
+          await updateDoc(doc(db, 'users', uid), { disabled });
           await refreshStaff();
         } catch (error) {
-          Alert.alert('Could not disable account', error?.message || 'Please try again.');
+          Alert.alert(`Could not ${disabled ? 'disable' : 'enable'} account`, error?.message || 'Please try again.');
         }
       } },
     ]
@@ -149,6 +163,22 @@ export default function SettingsScreen() {
   const [jumbo, setJumbo] = useState(
     String(thresholds.jumbo)
   );
+
+  const [perEggPriceInputs, setPerEggPriceInputs] = useState(() => Object.fromEntries(
+    PRICE_SIZE_OPTIONS.map(([key]) => [key, String(salePrices.perEgg[key])])
+  ));
+  const [perTrayPriceInputs, setPerTrayPriceInputs] = useState(() => Object.fromEntries(
+    PRICE_SIZE_OPTIONS.map(([key]) => [key, String(salePrices.perTray[key])])
+  ));
+
+  useEffect(() => {
+    setPerEggPriceInputs(Object.fromEntries(
+      PRICE_SIZE_OPTIONS.map(([key]) => [key, String(salePrices.perEgg[key])])
+    ));
+    setPerTrayPriceInputs(Object.fromEntries(
+      PRICE_SIZE_OPTIONS.map(([key]) => [key, String(salePrices.perTray[key])])
+    ));
+  }, [salePrices]);
 
 
   // =====================================================
@@ -209,6 +239,27 @@ export default function SettingsScreen() {
         'The thresholds could not be saved. Please try again.'
       );
     }
+  };
+
+  const handleSaveSalePrices = async () => {
+    const hasInvalidPrice = [perEggPriceInputs, perTrayPriceInputs].some(group => (
+      PRICE_SIZE_OPTIONS.some(([key]) => (
+        group[key].trim() === '' || !Number.isFinite(Number(group[key])) || Number(group[key]) < 0
+      ))
+    ));
+    if (hasInvalidPrice) {
+      Alert.alert('Invalid price', 'Enter a price of 0 or greater for each egg size.');
+      return;
+    }
+
+    const success = await updateSalePrices({
+      perEgg: Object.fromEntries(PRICE_SIZE_OPTIONS.map(([key]) => [key, Number(perEggPriceInputs[key])])),
+      perTray: Object.fromEntries(PRICE_SIZE_OPTIONS.map(([key]) => [key, Number(perTrayPriceInputs[key])])),
+    });
+    Alert.alert(
+      success ? 'Prices Saved' : 'Save Failed',
+      success ? 'The default price references are available to everyone in this business.' : 'The price references could not be saved. Please try again.'
+    );
   };
 
 
@@ -354,11 +405,52 @@ export default function SettingsScreen() {
 
         {role === 'owner' && (
           <View style={styles.staffSection}>
+            <Text style={styles.sectionTitle}>Sale Price References</Text>
+            <Text style={styles.description}>Set suggested prices per egg and per tray. These appear as editable defaults when recording a sale.</Text>
+            <Text style={styles.label}>Default price per egg (PHP)</Text>
+            {PRICE_SIZE_OPTIONS.map(([key, label]) => (
+              <View key={`egg-${key}`} style={styles.priceSettingRow}>
+                <Text style={styles.priceSettingLabel}>{label}</Text>
+                <TextInput
+                  style={styles.priceSettingInput}
+                  value={perEggPriceInputs[key]}
+                  onChangeText={value => setPerEggPriceInputs(previous => ({ ...previous, [key]: value.replace(/[^0-9.]/g, '') }))}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                />
+              </View>
+            ))}
+            <Text style={styles.label}>Default price per tray (PHP)</Text>
+            {PRICE_SIZE_OPTIONS.map(([key, label]) => (
+              <View key={`tray-${key}`} style={styles.priceSettingRow}>
+                <Text style={styles.priceSettingLabel}>{label}</Text>
+                <TextInput
+                  style={styles.priceSettingInput}
+                  value={perTrayPriceInputs[key]}
+                  onChangeText={value => setPerTrayPriceInputs(previous => ({ ...previous, [key]: value.replace(/[^0-9.]/g, '') }))}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                />
+              </View>
+            ))}
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveSalePrices}>
+              <Text style={styles.saveButtonText}>Save Price References</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {role === 'owner' && (
+          <View style={styles.staffSection}>
             <Text style={styles.sectionTitle}>Staff accounts</Text>
             <Text style={styles.description}>Create individual sign-ins for people in this business. Staff accounts are linked to this workspace automatically.</Text>
             <TextInput style={styles.input} value={staffName} onChangeText={setStaffName} placeholder="Staff member name" placeholderTextColor="#738078" />
             <TextInput style={styles.input} value={staffEmail} onChangeText={setStaffEmail} placeholder="Staff email" placeholderTextColor="#738078" keyboardType="email-address" autoCapitalize="none" />
-            <TextInput style={styles.input} value={staffPassword} onChangeText={setStaffPassword} placeholder="Temporary password (8+ characters)" placeholderTextColor="#738078" secureTextEntry />
+            <View style={styles.staffPasswordRow}>
+              <TextInput style={styles.staffPasswordInput} value={staffPassword} onChangeText={setStaffPassword} placeholder="Temporary password (8+ characters)" placeholderTextColor="#738078" secureTextEntry={!showStaffPassword} autoCapitalize="none" />
+              <TouchableOpacity onPress={() => setShowStaffPassword(value => !value)} accessibilityRole="button" accessibilityLabel={showStaffPassword ? 'Hide staff password' : 'Show staff password'}>
+                <Text style={styles.staffPasswordToggle}>{showStaffPassword ? 'Hide' : 'Show'}</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity style={styles.saveButton} onPress={handleCreateStaff} disabled={isManagingStaff}>
               <Text style={styles.saveButtonText}>{isManagingStaff ? 'Creating…' : 'Create staff account'}</Text>
             </TouchableOpacity>
@@ -368,11 +460,9 @@ export default function SettingsScreen() {
                   <Text style={styles.staffName}>{staff.displayName || 'Staff member'}</Text>
                   <Text style={styles.description}>{staff.email}{staff.disabled ? ' · Disabled' : ''}</Text>
                 </View>
-                {!staff.disabled && (
-                  <TouchableOpacity onPress={() => handleDisableStaff(staff.uid)}>
-                    <Text style={styles.disableText}>Disable</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity onPress={() => handleSetStaffDisabled(staff.uid, !staff.disabled)}>
+                  <Text style={staff.disabled ? styles.enableText : styles.disableText}>{staff.disabled ? 'Enable' : 'Disable'}</Text>
+                </TouchableOpacity>
               </View>
             ))}
           </View>
@@ -539,8 +629,15 @@ const baseStyles = StyleSheet.create({
     fontWeight: 'bold',
   },
   staffSection: { marginTop: 20, marginBottom: 20 },
+  priceSettingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  priceSettingLabel: { flex: 1, color: '#374151', fontWeight: '600' },
+  priceSettingInput: { width: 120, backgroundColor: '#FFFFFF', color: '#111827', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: '#D1D5DB', textAlign: 'right' },
   staffRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E2E9E3' },
   staffDetails: { flex: 1 },
+  staffPasswordRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#D8E0D8', paddingHorizontal: 12, marginBottom: 10 },
+  staffPasswordInput: { flex: 1, color: '#213329', paddingVertical: 13 },
+  staffPasswordToggle: { color: '#536258', fontSize: 13, fontWeight: '700', paddingVertical: 8, paddingLeft: 10 },
   staffName: { fontSize: 15, fontWeight: '700' },
   disableText: { color: '#C84D4D', fontWeight: '700', padding: 8 },
+  enableText: { color: '#39834A', fontWeight: '700', padding: 8 },
 });

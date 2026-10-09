@@ -13,12 +13,28 @@ import { EggContext } from '../EggContext';
 import { useTheme, useThemedStyles } from '../ThemeContext';
 
 const EGGS_PER_TRAY = 30;
+const INITIAL_HISTORY_COUNT = 3;
+
+const formatHistoryDate = value => {
+  if (!value) return 'Date unavailable';
+  if (typeof value === 'string') {
+    const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnlyMatch) return `${dateOnlyMatch[2]}-${dateOnlyMatch[3]}-${dateOnlyMatch[1]}`;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || 'Date unavailable';
+  return [date.getMonth() + 1, date.getDate(), date.getFullYear()]
+    .map(part => String(part).padStart(2, '0'))
+    .join('-');
+};
 
 export default function ProductionScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(baseStyles);
   const [inputMode, setInputMode] = useState('eggs');
   const [isSaving, setIsSaving] = useState(false);
+  const [showAllProductions, setShowAllProductions] = useState(false);
 
   const [pullet, setPullet] = useState('');
   const [small, setSmall] = useState('');
@@ -524,13 +540,13 @@ export default function ProductionScreen() {
             </Text>
           </View>
         ) : (
-          productions.map((record, index) => (
+          productions.slice(0, showAllProductions ? productions.length : INITIAL_HISTORY_COUNT).map((record, index) => (
             <View
               key={record.firebaseId || `production-${record.id}-${index}`}
               style={styles.historyCard}
             >
               <Text style={styles.historyDate}>
-                {record.date}
+                {formatHistoryDate(record.date)}
               </Text>
 
               <Text style={styles.historyEggs}>
@@ -567,6 +583,11 @@ export default function ProductionScreen() {
               </Text>
             </View>
           ))
+        )}
+        {productions.length > INITIAL_HISTORY_COUNT && (
+          <TouchableOpacity style={styles.historyToggle} onPress={() => setShowAllProductions(value => !value)}>
+            <Text style={styles.historyToggleText}>{showAllProductions ? 'View Less' : 'View More'}</Text>
+          </TouchableOpacity>
         )}
       </View>
     </ScrollView>
@@ -750,7 +771,13 @@ const baseStyles = StyleSheet.create({
 
   historyDate: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#2D6A4F',
+    fontWeight: '700',
+    backgroundColor: '#E7F2EA',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
 
   historyEggs: {
@@ -769,4 +796,6 @@ const baseStyles = StyleSheet.create({
     fontSize: 14,
     marginTop: 3,
   },
+  historyToggle: { alignSelf: 'center', paddingHorizontal: 18, paddingVertical: 10, marginBottom: 18 },
+  historyToggleText: { color: '#2D6A4F', fontSize: 14, fontWeight: '700' },
 });

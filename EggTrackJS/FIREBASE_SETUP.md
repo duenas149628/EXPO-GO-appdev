@@ -10,7 +10,7 @@ Enable Email/Password under Firebase Console → Authentication → Sign-in meth
 
 If setup is interrupted, sign in again with the same Owner account and retry. The migration lock prevents a newly created business from claiming the legacy records. Data that exists only in a device's local storage is not copied by this migration.
 
-The Owner creates Staff logins from Settings. Share the initial password securely; Staff can sign in with their own email and password. Disabling a Staff profile blocks app access and Firestore data access. Firebase Authentication still accepts the credentials, since remotely disabling an Auth user requires a trusted server/admin environment.
+The Owner creates Staff logins from Settings. Share the initial password securely; Staff can sign in with their own email and password. Disabling a Staff profile blocks app access and Firestore data access, and the Owner can enable it again from Settings. Firebase Authentication still accepts the credentials, since remotely disabling or deleting an Auth user requires a trusted server/admin environment.
 
 ## Deploy Firestore rules
 

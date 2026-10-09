@@ -21,6 +21,7 @@ export default function LoginScreen() {
   const styles = useThemedStyles(baseStyles);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -81,14 +82,20 @@ export default function LoginScreen() {
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor={colors.muted}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={styles.passwordRow}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            placeholderTextColor={colors.muted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity onPress={() => setShowPassword(value => !value)} accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
+            <Text style={styles.passwordToggle}>{showPassword ? 'Hide' : 'Show'}</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={isLoading}>
           {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>{isCreatingAccount ? 'Create Owner account' : 'Sign in'}</Text>}
         </TouchableOpacity>
@@ -137,6 +144,9 @@ const baseStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+  passwordRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, marginBottom: 11, borderWidth: 1, borderColor: '#E5E7EB', paddingRight: 14 },
+  passwordInput: { flex: 1, color: '#111827', paddingHorizontal: 14, paddingVertical: 14 },
+  passwordToggle: { color: '#536258', fontSize: 13, fontWeight: '700', paddingVertical: 10, paddingLeft: 8 },
   button: {
     backgroundColor: '#111827',
     padding: 15,

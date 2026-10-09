@@ -106,7 +106,7 @@ service cloud.firestore {
         || (ownerOf(resource.data.businessId)
           && staffRole(resource.data.role)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['disabled'])
-          && request.resource.data.disabled == true)
+          && request.resource.data.disabled is bool)
       );
       allow delete: if false;
     }

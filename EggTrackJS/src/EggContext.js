@@ -44,6 +44,11 @@ const DEFAULT_THRESHOLDS = {
   jumbo: 10,
 };
 
+const DEFAULT_SALE_PRICES = {
+  perEgg: { pullet: 5, small: 6, medium: 7, large: 8, xlarge: 9, jumbo: 10 },
+  perTray: { pullet: 150, small: 165, medium: 185, large: 205, xlarge: 225, jumbo: 240 },
+};
+
 const EGG_FIELDS = ['pullet', 'small', 'medium', 'large', 'xlarge', 'jumbo'];
 
 const commitInventoryOperation = async (businessId, operation) => {
@@ -91,6 +96,7 @@ export default function EggProvider({
   const [thresholds, setThresholds] = useState(
     DEFAULT_THRESHOLDS
   );
+  const [salePrices, setSalePrices] = useState(DEFAULT_SALE_PRICES);
 
   const [isLoading, setIsLoading] = useState(true);
   const storageKey = user?.uid
@@ -125,6 +131,7 @@ export default function EggProvider({
 
   useEffect(() => {
     let isCurrent = true;
+    setSalePrices(DEFAULT_SALE_PRICES);
 
     const loadLocalData = async () => {
       try {
@@ -334,7 +341,7 @@ export default function EggProvider({
 
           const data = snapshot.data();
 
-        const cloudInventory = {
+          const cloudInventory = {
             pullet: Number(data.pullet || 0),
             small: Number(data.small || 0),
             medium: Number(data.medium || 0),
@@ -370,11 +377,22 @@ export default function EggProvider({
             console.log(
               'settings/main does not exist. Using default thresholds.'
             );
+            setSalePrices(DEFAULT_SALE_PRICES);
 
             return;
           }
 
           const data = snapshot.data();
+          setSalePrices({
+            perEgg: Object.fromEntries(EGG_FIELDS.map(key => [
+              key,
+              Number(data.salePrices?.perEgg?.[key] ?? DEFAULT_SALE_PRICES.perEgg[key]),
+            ])),
+            perTray: Object.fromEntries(EGG_FIELDS.map(key => [
+              key,
+              Number(data.salePrices?.perTray?.[key] ?? DEFAULT_SALE_PRICES.perTray[key]),
+            ])),
+          });
 
           if (data.thresholds) {
             setThresholds({
@@ -778,6 +796,32 @@ export default function EggProvider({
     }
   };
 
+  const updateSalePrices = async newSalePrices => {
+    if (role !== 'owner' || !user || !businessId) return false;
+    const isValidGroup = group => EGG_FIELDS.every(key => (
+      Number.isFinite(Number(group?.[key])) && Number(group[key]) >= 0
+    ));
+    if (!isValidGroup(newSalePrices?.perEgg) || !isValidGroup(newSalePrices?.perTray)) return false;
+
+    const updatedSalePrices = {
+      perEgg: Object.fromEntries(EGG_FIELDS.map(key => [key, Number(newSalePrices.perEgg[key])])),
+      perTray: Object.fromEntries(EGG_FIELDS.map(key => [key, Number(newSalePrices.perTray[key])])),
+    };
+    try {
+      await setDoc(doc(db, 'businesses', businessId, 'settings', 'main'), {
+        salePrices: updatedSalePrices,
+        updatedAt: Date.now(),
+        updatedBy: user.uid,
+        updatedByEmail: user.email,
+      }, { merge: true });
+      setSalePrices(updatedSalePrices);
+      return true;
+    } catch (error) {
+      console.log('Error saving sale price defaults:', error);
+      return false;
+    }
+  };
+
 
   // =====================================================
   // BACKWARD-COMPATIBLE SINGLE THRESHOLD UPDATE
@@ -820,12 +864,14 @@ export default function EggProvider({
         sales: visibleDataReady ? sales : [],
         productions: visibleDataReady ? productions : [],
         thresholds: visibleDataReady ? thresholds : DEFAULT_THRESHOLDS,
+        salePrices: visibleDataReady ? salePrices : DEFAULT_SALE_PRICES,
 
         addProduction,
         addSale,
 
         updateThreshold,
         updateThresholds,
+        updateSalePrices,
       }}
     >
       {children}

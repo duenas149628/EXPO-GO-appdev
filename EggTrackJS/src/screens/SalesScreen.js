@@ -1,4 +1,5 @@
 import React, {
+  useEffect,
   useContext,
   useState,
 } from 'react';
@@ -53,7 +54,24 @@ const emptyValues = {
 };
 
 const EGG_UNITS = ['Eggs', 'Trays'];
-const UNSPECIFIED_COLOR_BRAND = 'Unspecified';
+const INITIAL_HISTORY_COUNT = 3;
+const priceGroupToInputs = group => Object.fromEntries(
+  EGG_SIZES.map(({ key }) => [key, Number(group[key]).toFixed(2)])
+);
+
+const formatHistoryDate = value => {
+  if (!value) return 'Date unavailable';
+  if (typeof value === 'string') {
+    const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnlyMatch) return `${dateOnlyMatch[2]}-${dateOnlyMatch[3]}-${dateOnlyMatch[1]}`;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || 'Date unavailable';
+  return [date.getMonth() + 1, date.getDate(), date.getFullYear()]
+    .map(part => String(part).padStart(2, '0'))
+    .join('-');
+};
 
 export default function SalesScreen() {
   const { colors } = useTheme();
@@ -63,6 +81,7 @@ export default function SalesScreen() {
     sales,
     addSale,
     isOnline,
+    salePrices,
   } = useContext(EggContext);
 
   const [inputMode, setInputMode] =
@@ -80,24 +99,27 @@ export default function SalesScreen() {
   const [trayQuantities, setTrayQuantities] =
     useState(emptyValues);
 
-  const [colorBrand, setColorBrand] = useState(UNSPECIFIED_COLOR_BRAND);
-  const [isColorBrandDropdownOpen, setIsColorBrandDropdownOpen] = useState(false);
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
   const quantities = inputMode === 'trays' ? trayQuantities : eggQuantities;
-  const colorBrandOptions = [...new Set([
-    UNSPECIFIED_COLOR_BRAND,
-    ...sales.flatMap(record => [record.colorBrand, record.color, record.brand]
-      .filter(value => typeof value === 'string' && value.trim())
-      .map(value => value.trim())),
-  ])];
 
   const [eggPrices, setEggPrices] =
-    useState(emptyValues);
+    useState(() => priceGroupToInputs(salePrices.perEgg));
 
   const [trayPrices, setTrayPrices] =
-    useState(emptyValues);
+    useState(() => priceGroupToInputs(salePrices.perTray));
   const prices = inputMode === 'trays' ? trayPrices : eggPrices;
   const [isSaving, setIsSaving] = useState(false);
+  const [showAllSales, setShowAllSales] = useState(false);
+  const defaultPrices = inputMode === 'trays' ? salePrices.perTray : salePrices.perEgg;
+
+  useEffect(() => {
+    setEggPrices(priceGroupToInputs(salePrices.perEgg));
+    setTrayPrices(priceGroupToInputs(salePrices.perTray));
+  }, [salePrices]);
+
+  const getPriceForSize = key => prices[key] === ''
+    ? Number(defaultPrices[key])
+    : getNumber(prices[key]);
 
 
   // =====================================================
@@ -181,10 +203,7 @@ export default function SalesScreen() {
             quantities[key]
           );
 
-        const price =
-          getNumber(
-            prices[key]
-          );
+        const price = getPriceForSize(key);
 
 
         let eggs;
@@ -381,30 +400,12 @@ export default function SalesScreen() {
           quantities[key]
         );
 
-      const price =
-        prices[key];
+      const price = getPriceForSize(key);
 
 
       if (
         quantity > 0
       ) {
-
-        if (
-          price === ''
-        ) {
-
-          Alert.alert(
-            'Missing Price',
-            `Please enter the price ${
-              inputMode === 'trays'
-                ? 'per tray'
-                : 'per egg'
-            } for ${size.label}.`
-          );
-
-          return;
-        }
-
 
         if (
           !validatePrice(
@@ -503,7 +504,6 @@ export default function SalesScreen() {
       inputMode,
 
       unit: inputMode === 'trays' ? 'Trays' : 'Eggs',
-      colorBrand,
       eggSize: EGG_SIZES.filter(size => sale[size.key] > 0).map(size => size.label).join(', '),
       quantity: Object.values(quantities).reduce((sum, value) => sum + getNumber(value), 0),
       equivalentEggQuantity: sale.totalEggs,
@@ -513,8 +513,8 @@ export default function SalesScreen() {
         quantity: getNumber(quantities[size.key]),
         unit: inputMode === 'trays' ? 'Trays' : 'Eggs',
         equivalentEggQuantity: sale[size.key],
-        price: getNumber(prices[size.key]),
-        total: getNumber(quantities[size.key]) * getNumber(prices[size.key]),
+        price: getPriceForSize(size.key),
+        total: getNumber(quantities[size.key]) * getPriceForSize(size.key),
       })),
 
 
@@ -555,34 +555,22 @@ export default function SalesScreen() {
       prices: {
 
         pullet:
-          getNumber(
-            prices.pullet
-          ),
+          getPriceForSize('pullet'),
 
         small:
-          getNumber(
-            prices.small
-          ),
+          getPriceForSize('small'),
 
         medium:
-          getNumber(
-            prices.medium
-          ),
+          getPriceForSize('medium'),
 
         large:
-          getNumber(
-            prices.large
-          ),
+          getPriceForSize('large'),
 
         xlarge:
-          getNumber(
-            prices.xlarge
-          ),
+          getPriceForSize('xlarge'),
 
         jumbo:
-          getNumber(
-            prices.jumbo
-          ),
+          getPriceForSize('jumbo'),
       },
     };
 
@@ -631,9 +619,8 @@ export default function SalesScreen() {
     setEggQuantities(emptyValues);
     setTrayQuantities(emptyValues);
 
-    setEggPrices(emptyValues);
-    setTrayPrices(emptyValues);
-    setColorBrand(UNSPECIFIED_COLOR_BRAND);
+    setEggPrices(priceGroupToInputs(salePrices.perEgg));
+    setTrayPrices(priceGroupToInputs(salePrices.perTray));
     setIsSaving(false);
   };
 
@@ -650,7 +637,7 @@ export default function SalesScreen() {
   ) || EGG_SIZES[0];
   const selectedSizeKeyValue = selectedSize.key;
   const selectedQuantity = getNumber(quantities[selectedSizeKeyValue]);
-  const selectedPrice = getNumber(prices[selectedSizeKeyValue]);
+  const selectedPrice = getPriceForSize(selectedSizeKeyValue);
   const selectedAmount = selectedQuantity * selectedPrice;
 
 
@@ -724,37 +711,6 @@ export default function SalesScreen() {
 
 
       {/* EGG SIZE INPUTS */}
-
-      <Text style={styles.inputLabel}>Color / Brand</Text>
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityState={{ expanded: isColorBrandDropdownOpen }}
-        style={styles.sizeDropdownButton}
-        onPress={() => setIsColorBrandDropdownOpen(open => !open)}
-      >
-        <Text style={styles.sizeDropdownText}>{colorBrand}</Text>
-        <Text style={styles.dropdownChevron}>{isColorBrandDropdownOpen ? '^' : 'v'}</Text>
-      </TouchableOpacity>
-      {isColorBrandDropdownOpen && (
-        <View style={styles.sizeDropdownMenu}>
-          {colorBrandOptions.map(option => (
-            <TouchableOpacity
-              key={option}
-              accessibilityRole="button"
-              accessibilityState={{ selected: option === colorBrand }}
-              style={[styles.sizeDropdownOption, option === colorBrand && styles.selectedSizeDropdownOption]}
-              onPress={() => {
-                setColorBrand(option);
-                setIsColorBrandDropdownOpen(false);
-              }}
-            >
-              <Text style={[styles.sizeDropdownOptionText, option === colorBrand && styles.selectedSizeDropdownOptionText]}>
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
 
       <Text style={styles.inputLabel}>Egg Size</Text>
 
@@ -1047,7 +1003,7 @@ export default function SalesScreen() {
 
       ) : (
 
-        sales.map(
+        sales.slice(0, showAllSales ? sales.length : INITIAL_HISTORY_COUNT).map(
           (
             sale,
             index
@@ -1076,7 +1032,7 @@ export default function SalesScreen() {
                   styles.historyDate
                 }
               >
-                {sale.date}
+                {formatHistoryDate(sale.date)}
               </Text>
 
               {sale.pendingSync && (
@@ -1093,11 +1049,6 @@ export default function SalesScreen() {
                   || EGG_SIZES.filter(size => Number(sale[size.key] || 0) > 0).map(size => size.label).join(', ')
                   || 'Not recorded'}
               </Text>
-
-              <Text style={styles.historyText}>
-                Color / Brand: {sale.colorBrand || sale.color || sale.brand || UNSPECIFIED_COLOR_BRAND}
-              </Text>
-
 
               <Text
                 style={
@@ -1130,6 +1081,11 @@ export default function SalesScreen() {
           )
         )
 
+      )}
+      {sales.length > INITIAL_HISTORY_COUNT && (
+        <TouchableOpacity style={styles.historyToggle} onPress={() => setShowAllSales(value => !value)}>
+          <Text style={styles.historyToggleText}>{showAllSales ? 'View Less' : 'View More'}</Text>
+        </TouchableOpacity>
       )}
 
     </ScrollView>
@@ -1339,8 +1295,14 @@ const baseStyles = StyleSheet.create({
 
   historyDate: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontWeight: '700',
+    color: '#2D6A4F',
+    backgroundColor: '#E7F2EA',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
   },
 
   historyText: {
@@ -1353,4 +1315,6 @@ const baseStyles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
+  historyToggle: { alignSelf: 'center', paddingHorizontal: 18, paddingVertical: 10, marginBottom: 18 },
+  historyToggleText: { color: '#2D6A4F', fontSize: 14, fontWeight: '700' },
 });
