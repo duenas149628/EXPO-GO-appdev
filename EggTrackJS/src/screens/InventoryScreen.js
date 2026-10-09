@@ -56,247 +56,46 @@ export default function InventoryScreen() {
         </Text>
 
         <View style={styles.totalCard}>
-
-          <Text style={styles.totalLabel}>
-            Total Eggs
-          </Text>
-
-          <Text style={styles.totalValue}>
-            {totalEggs}
-          </Text>
-
-          <Text style={styles.totalUnit}>
-            eggs
-          </Text>
-
-        </View>
-
-        <View style={styles.infoCard}>
-
-          <Text style={styles.infoTitle}>
-            Storage Summary
-          </Text>
-
-          <Text style={styles.infoText}>
-            Complete Trays: {completeTrays}
-          </Text>
-
-          <Text style={styles.infoText}>
-            Loose Eggs: {looseEggs}
-          </Text>
-
+          <View>
+            <Text style={styles.totalLabel}>Total Eggs</Text>
+            <Text style={styles.totalValue}>{totalEggs}</Text>
+          </View>
+          <View style={styles.traySummary}>
+            <Text style={styles.totalLabel}>Total Trays</Text>
+            <Text style={styles.trayTotalValue}>{completeTrays}</Text>
+            {looseEggs > 0 && <Text style={styles.totalUnit}>+ {looseEggs} loose eggs</Text>}
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>
           Inventory by Size
         </Text>
 
-        <View style={styles.sizeCard}>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Pullet
+        <View style={styles.sizeGrid}>
+          {[
+            ['Pullet', 'pullet'],
+            ['Small', 'small'],
+            ['Medium', 'medium'],
+            ['Large', 'large'],
+            ['X-Large', 'xlarge'],
+            ['Jumbo', 'jumbo'],
+          ].map(([name, key]) => (
+            <View key={key} style={styles.sizeItem}>
+              <View style={styles.sizeHeader}>
+                <Text style={styles.sizeName}>{name}</Text>
+                <Text style={getStatusStyle(inventory[key], thresholds[key])}>
+                  {getStatus(inventory[key], thresholds[key])}
+                </Text>
+              </View>
+              <Text style={styles.trayQuantity}>
+                {Math.floor(inventory[key] / 30)} {Math.floor(inventory[key] / 30) === 1 ? 'Tray' : 'Trays'}
               </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.pullet,
-                  thresholds.pullet
-                )}
-              >
-                {getStatus(
-                  inventory.pullet,
-                  thresholds.pullet
-                )}
+              <Text style={styles.quantity}>
+                {inventory[key]} eggs{inventory[key] % 30 > 0 ? ` (${inventory[key] % 30} loose)` : ''}
               </Text>
+              <Text style={styles.threshold}>Threshold: {thresholds[key]}</Text>
             </View>
-
-            <Text style={styles.quantity}>
-              {inventory.pullet} eggs
-            </Text>
-
-            <Text style={styles.trayQuantity}>
-              {Math.floor(inventory.pullet / 30)} trays + {inventory.pullet % 30} loose
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.pullet}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Small
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.small,
-                  thresholds.small
-                )}
-              >
-                {getStatus(
-                  inventory.small,
-                  thresholds.small
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.small} eggs
-            </Text>
-
-            <Text style={styles.trayQuantity}>
-              {Math.floor(inventory.small / 30)} trays + {inventory.small % 30} loose
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.small}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Medium
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.medium,
-                  thresholds.medium
-                )}
-              >
-                {getStatus(
-                  inventory.medium,
-                  thresholds.medium
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.medium} eggs
-            </Text>
-
-            <Text style={styles.trayQuantity}>
-              {Math.floor(inventory.medium / 30)} trays + {inventory.medium % 30} loose
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.medium}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Large
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.large,
-                  thresholds.large
-                )}
-              >
-                {getStatus(
-                  inventory.large,
-                  thresholds.large
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.large} eggs
-            </Text>
-
-            <Text style={styles.trayQuantity}>
-              {Math.floor(inventory.large / 30)} trays + {inventory.large % 30} loose
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.large}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                X-Large
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.xlarge,
-                  thresholds.xlarge
-                )}
-              >
-                {getStatus(
-                  inventory.xlarge,
-                  thresholds.xlarge
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.xlarge} eggs
-            </Text>
-
-            <Text style={styles.trayQuantity}>
-              {Math.floor(inventory.xlarge / 30)} trays + {inventory.xlarge % 30} loose
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.xlarge}
-            </Text>
-
-          </View>
-
-          <View style={styles.sizeItem}>
-
-            <View style={styles.sizeHeader}>
-              <Text style={styles.sizeName}>
-                Jumbo
-              </Text>
-
-              <Text
-                style={getStatusStyle(
-                  inventory.jumbo,
-                  thresholds.jumbo
-                )}
-              >
-                {getStatus(
-                  inventory.jumbo,
-                  thresholds.jumbo
-                )}
-              </Text>
-            </View>
-
-            <Text style={styles.quantity}>
-              {inventory.jumbo} eggs
-            </Text>
-
-            <Text style={styles.trayQuantity}>
-              {Math.floor(inventory.jumbo / 30)} trays + {inventory.jumbo % 30} loose
-            </Text>
-
-            <Text style={styles.threshold}>
-              Low-stock threshold: {thresholds.jumbo}
-            </Text>
-
-          </View>
-
+          ))}
         </View>
 
       </View>
@@ -328,7 +127,10 @@ const baseStyles = StyleSheet.create({
 
   totalCard: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
     borderRadius: 12,
     elevation: 2,
   },
@@ -339,7 +141,7 @@ const baseStyles = StyleSheet.create({
   },
 
   totalValue: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
     marginTop: 5,
   },
@@ -349,43 +151,37 @@ const baseStyles = StyleSheet.create({
     color: '#9CA3AF',
   },
 
-  infoCard: {
-    backgroundColor: '#FFFFFF',
-    marginTop: 15,
-    padding: 20,
-    borderRadius: 12,
-    elevation: 2,
+  traySummary: {
+    alignItems: 'flex-end',
   },
 
-  infoTitle: {
-    fontSize: 18,
+  trayTotalValue: {
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
-  },
-
-  infoText: {
-    fontSize: 16,
-    marginVertical: 4,
+    color: '#2D6A4F',
+    marginTop: 3,
   },
 
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 30,
+    marginTop: 22,
     marginBottom: 10,
   },
 
-  sizeCard: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 15,
-    borderRadius: 12,
-    elevation: 2,
+  sizeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
 
   sizeItem: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    width: '48.5%',
+    backgroundColor: '#FFFFFF',
+    padding: 11,
+    borderRadius: 10,
+    marginBottom: 10,
+    elevation: 2,
   },
 
   sizeHeader: {
@@ -395,37 +191,37 @@ const baseStyles = StyleSheet.create({
   },
 
   sizeName: {
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 
   quantity: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 8,
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 3,
   },
 
   trayQuantity: {
     color: '#2D6A4F',
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 3,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 8,
   },
 
   threshold: {
-    fontSize: 13,
+    fontSize: 10,
     color: '#6B7280',
     marginTop: 4,
   },
 
   normalStock: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: 'bold',
     color: '#6B7280',
   },
 
   lowStock: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: 'bold',
     color: '#C84D4D',
   },

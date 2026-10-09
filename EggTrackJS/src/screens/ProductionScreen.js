@@ -43,72 +43,16 @@ export default function ProductionScreen() {
   const [xlarge, setXlarge] = useState('');
   const [jumbo, setJumbo] = useState('');
 
-  const [pulletTrays, setPulletTrays] = useState('');
-  const [pulletLoose, setPulletLoose] = useState('');
-
-  const [smallTrays, setSmallTrays] = useState('');
-  const [smallLoose, setSmallLoose] = useState('');
-
-  const [mediumTrays, setMediumTrays] = useState('');
-  const [mediumLoose, setMediumLoose] = useState('');
-
-  const [largeTrays, setLargeTrays] = useState('');
-  const [largeLoose, setLargeLoose] = useState('');
-
-  const [xlargeTrays, setXlargeTrays] = useState('');
-  const [xlargeLoose, setXlargeLoose] = useState('');
-
-  const [jumboTrays, setJumboTrays] = useState('');
-  const [jumboLoose, setJumboLoose] = useState('');
-
   const { addProduction, productions, isOnline } = useContext(EggContext);
 
-  const getEggs = (eggs, trays, loose) => {
-    if (inputMode === 'eggs') {
-      return Number(eggs) || 0;
-    }
+  const getEggs = value => (Number(value) || 0) * (inputMode === 'trays' ? EGGS_PER_TRAY : 1);
 
-    return (
-      (Number(trays) || 0) * EGGS_PER_TRAY +
-      (Number(loose) || 0)
-    );
-  };
-
-  const pulletEggs = getEggs(
-    pullet,
-    pulletTrays,
-    pulletLoose
-  );
-
-  const smallEggs = getEggs(
-    small,
-    smallTrays,
-    smallLoose
-  );
-
-  const mediumEggs = getEggs(
-    medium,
-    mediumTrays,
-    mediumLoose
-  );
-
-  const largeEggs = getEggs(
-    large,
-    largeTrays,
-    largeLoose
-  );
-
-  const xlargeEggs = getEggs(
-    xlarge,
-    xlargeTrays,
-    xlargeLoose
-  );
-
-  const jumboEggs = getEggs(
-    jumbo,
-    jumboTrays,
-    jumboLoose
-  );
+  const pulletEggs = getEggs(pullet);
+  const smallEggs = getEggs(small);
+  const mediumEggs = getEggs(medium);
+  const largeEggs = getEggs(large);
+  const xlargeEggs = getEggs(xlarge);
+  const jumboEggs = getEggs(jumbo);
 
   const totalEggs =
     pulletEggs +
@@ -135,30 +79,7 @@ export default function ProductionScreen() {
       jumbo,
     ];
 
-    const trayValues = [
-      pulletTrays,
-      smallTrays,
-      mediumTrays,
-      largeTrays,
-      xlargeTrays,
-      jumboTrays,
-    ];
-
-    const looseValues = [
-      pulletLoose,
-      smallLoose,
-      mediumLoose,
-      largeLoose,
-      xlargeLoose,
-      jumboLoose,
-    ];
-
-    const valuesToCheck =
-      inputMode === 'eggs'
-        ? eggValues
-        : [...trayValues, ...looseValues];
-
-    const hasInvalidValue = valuesToCheck.some(value => {
+    const hasInvalidValue = eggValues.some(value => {
       if (value.trim() === '') {
         return false;
       }
@@ -176,25 +97,6 @@ export default function ProductionScreen() {
       );
 
       return;
-    }
-
-    if (inputMode === 'trays') {
-      const looseNumbers = looseValues.map(
-        value => Number(value) || 0
-      );
-
-      const hasTooManyLooseEggs = looseNumbers.some(
-        value => value >= EGGS_PER_TRAY
-      );
-
-      if (hasTooManyLooseEggs) {
-        Alert.alert(
-          'Invalid Loose Egg Quantity',
-          'Loose eggs must be less than 30. Enter another tray instead.'
-        );
-
-        return;
-      }
     }
 
     if (totalEggs === 0) {
@@ -232,19 +134,6 @@ export default function ProductionScreen() {
     setXlarge('');
     setJumbo('');
 
-    setPulletTrays('');
-    setPulletLoose('');
-    setSmallTrays('');
-    setSmallLoose('');
-    setMediumTrays('');
-    setMediumLoose('');
-    setLargeTrays('');
-    setLargeLoose('');
-    setXlargeTrays('');
-    setXlargeLoose('');
-    setJumboTrays('');
-    setJumboLoose('');
-
     Alert.alert(
       'Production Saved',
       isOnline === false
@@ -259,15 +148,13 @@ export default function ProductionScreen() {
     value,
     setValue
   ) => {
-    const total = Number(value) || 0;
+    const total = getEggs(value);
 
     return (
       <View style={styles.sizeCard}>
         <Text style={styles.sizeTitle}>{name}</Text>
 
-        <Text style={styles.inputLabel}>
-          Number of Eggs
-        </Text>
+        <Text style={styles.inputLabel}>{inputMode === 'trays' ? 'Number of Trays' : 'Number of Eggs'}</Text>
 
         <TextInput
           style={[styles.input, { color: colors.text }]}
@@ -279,64 +166,6 @@ export default function ProductionScreen() {
           keyboardType="numeric"
           maxLength={5}
         />
-
-        <Text style={styles.calculatedText}>
-          Total: {total} eggs
-        </Text>
-      </View>
-    );
-  };
-
-  const renderTrayInput = (
-    name,
-    trays,
-    setTrays,
-    loose,
-    setLoose
-  ) => {
-    const total =
-      (Number(trays) || 0) * EGGS_PER_TRAY +
-      (Number(loose) || 0);
-
-    return (
-      <View style={styles.sizeCard}>
-        <Text style={styles.sizeTitle}>{name}</Text>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>
-              Trays
-            </Text>
-
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholderTextColor={colors.muted}
-              selectionColor={colors.primary}
-              value={trays}
-              onChangeText={setTrays}
-              placeholder="0"
-              keyboardType="numeric"
-              maxLength={4}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>
-              Loose Eggs
-            </Text>
-
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholderTextColor={colors.muted}
-              selectionColor={colors.primary}
-              value={loose}
-              onChangeText={setLoose}
-              placeholder="0"
-              keyboardType="numeric"
-              maxLength={2}
-            />
-          </View>
-        </View>
 
         <Text style={styles.calculatedText}>
           Total: {total} eggs
@@ -399,7 +228,7 @@ export default function ProductionScreen() {
                     styles.activeModeButtonText,
                 ]}
               >
-                Trays + Loose
+                Trays
               </Text>
             </TouchableOpacity>
           </View>
@@ -407,99 +236,47 @@ export default function ProductionScreen() {
           <Text style={styles.modeDescription}>
             {inputMode === 'eggs'
               ? 'Enter the exact number of eggs collected.'
-              : 'Enter complete trays and remaining loose eggs. One tray contains 30 eggs.'}
+              : 'Enter the number of trays collected. One tray contains 30 eggs.'}
           </Text>
         </View>
 
-        {inputMode === 'eggs' ? (
-          <>
-            {renderEggInput(
-              'Pullet',
-              pullet,
-              setPullet
-            )}
+        <View style={styles.inputGrid}>
+          {renderEggInput(
+            'Pullet',
+            pullet,
+            setPullet
+          )}
 
-            {renderEggInput(
-              'Small',
-              small,
-              setSmall
-            )}
+          {renderEggInput(
+            'Small',
+            small,
+            setSmall
+          )}
 
-            {renderEggInput(
-              'Medium',
-              medium,
-              setMedium
-            )}
+          {renderEggInput(
+            'Medium',
+            medium,
+            setMedium
+          )}
 
-            {renderEggInput(
-              'Large',
-              large,
-              setLarge
-            )}
+          {renderEggInput(
+            'Large',
+            large,
+            setLarge
+          )}
 
-            {renderEggInput(
-              'X-Large',
-              xlarge,
-              setXlarge
-            )}
+          {renderEggInput(
+            'X-Large',
+            xlarge,
+            setXlarge
+          )}
 
-            {renderEggInput(
-              'Jumbo',
-              jumbo,
-              setJumbo
-            )}
-          </>
-        ) : (
-          <>
-            {renderTrayInput(
-              'Pullet',
-              pulletTrays,
-              setPulletTrays,
-              pulletLoose,
-              setPulletLoose
-            )}
-
-            {renderTrayInput(
-              'Small',
-              smallTrays,
-              setSmallTrays,
-              smallLoose,
-              setSmallLoose
-            )}
-
-            {renderTrayInput(
-              'Medium',
-              mediumTrays,
-              setMediumTrays,
-              mediumLoose,
-              setMediumLoose
-            )}
-
-            {renderTrayInput(
-              'Large',
-              largeTrays,
-              setLargeTrays,
-              largeLoose,
-              setLargeLoose
-            )}
-
-            {renderTrayInput(
-              'X-Large',
-              xlargeTrays,
-              setXlargeTrays,
-              xlargeLoose,
-              setXlargeLoose
-            )}
-
-            {renderTrayInput(
-              'Jumbo',
-              jumboTrays,
-              setJumboTrays,
-              jumboLoose,
-              setJumboLoose
-            )}
-          </>
-        )}
+          {renderEggInput(
+            'Jumbo',
+            jumbo,
+            setJumbo
+          )}
+        </View>
 
         <View style={styles.resultCard}>
           <Text style={styles.resultTitle}>
@@ -540,15 +317,12 @@ export default function ProductionScreen() {
             </Text>
           </View>
         ) : (
-          productions.slice(0, showAllProductions ? productions.length : INITIAL_HISTORY_COUNT).map((record, index) => (
+          <View style={styles.historyGrid}>
+          {productions.slice(0, showAllProductions ? productions.length : INITIAL_HISTORY_COUNT).map((record, index) => (
             <View
               key={record.firebaseId || `production-${record.id}-${index}`}
               style={styles.historyCard}
             >
-              <Text style={styles.historyDate}>
-                {formatHistoryDate(record.date)}
-              </Text>
-
               <Text style={styles.historyEggs}>
                 {record.totalEggs} eggs
               </Text>
@@ -559,30 +333,18 @@ export default function ProductionScreen() {
               </Text>
 
               <Text style={[styles.sizeDetails, { color: colors.secondaryText }]}>
-                Pullet: {record.pullet}
+                {[
+                  ['Pullet', record.pullet], ['Small', record.small], ['Medium', record.medium],
+                  ['Large', record.large], ['X-Large', record.xlarge], ['Jumbo', record.jumbo],
+                ].filter(([, quantity]) => Number(quantity) > 0).map(([name, quantity]) => `${name} ${quantity}`).join(' · ') || 'No size details'}
               </Text>
 
-              <Text style={[styles.sizeDetails, { color: colors.secondaryText }]}>
-                Small: {record.small}
-              </Text>
-
-              <Text style={[styles.sizeDetails, { color: colors.secondaryText }]}>
-                Medium: {record.medium}
-              </Text>
-
-              <Text style={[styles.sizeDetails, { color: colors.secondaryText }]}>
-                Large: {record.large}
-              </Text>
-
-              <Text style={[styles.sizeDetails, { color: colors.secondaryText }]}>
-                X-Large: {record.xlarge}
-              </Text>
-
-              <Text style={[styles.sizeDetails, { color: colors.secondaryText }]}>
-                Jumbo: {record.jumbo}
+              <Text style={styles.historyDate}>
+                {formatHistoryDate(record.date)}
               </Text>
             </View>
-          ))
+          ))}
+          </View>
         )}
         {productions.length > INITIAL_HISTORY_COUNT && (
           <TouchableOpacity style={styles.historyToggle} onPress={() => setShowAllProductions(value => !value)}>
@@ -601,33 +363,33 @@ const baseStyles = StyleSheet.create({
   },
 
   content: {
-    padding: 20,
+    padding: 16,
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: 'bold',
   },
 
   description: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
-    marginTop: 5,
-    marginBottom: 20,
+    marginTop: 4,
+    marginBottom: 15,
   },
 
   modeCard: {
     backgroundColor: '#FFFFFF',
-    padding: 18,
+    padding: 14,
     borderRadius: 12,
-    marginBottom: 15,
+    marginBottom: 12,
     elevation: 2,
   },
 
   modeTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 8,
   },
 
   modeRow: {
@@ -637,7 +399,7 @@ const baseStyles = StyleSheet.create({
 
   modeButton: {
     flex: 1,
-    padding: 13,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 10,
@@ -651,6 +413,7 @@ const baseStyles = StyleSheet.create({
 
   modeButtonText: {
     textAlign: 'center',
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#374151',
   },
@@ -660,28 +423,30 @@ const baseStyles = StyleSheet.create({
   },
 
   modeDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
-    marginTop: 12,
+    marginTop: 8,
   },
 
+  inputGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   sizeCard: {
+    width: '48.5%',
     backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 8,
     elevation: 2,
   },
 
   sizeTitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 6,
   },
 
   inputRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 6,
   },
 
   inputContainer: {
@@ -689,9 +454,9 @@ const baseStyles = StyleSheet.create({
   },
 
   inputLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
-    marginBottom: 6,
+    marginBottom: 4,
   },
 
   input: {
@@ -699,61 +464,63 @@ const baseStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 10,
-    padding: 13,
-    fontSize: 17,
+    padding: 8,
+    fontSize: 15,
   },
 
   calculatedText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
-    marginTop: 10,
+    marginTop: 6,
   },
 
   resultCard: {
     backgroundColor: '#FFFFFF',
-    marginTop: 8,
-    padding: 20,
-    borderRadius: 12,
+    marginTop: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
     elevation: 2,
   },
 
   resultTitle: {
-    fontSize: 19,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 4,
   },
 
   resultText: {
-    fontSize: 16,
-    marginVertical: 4,
+    fontSize: 12,
+    marginVertical: 1,
   },
 
   saveButton: {
     backgroundColor: '#111827',
-    padding: 16,
+    paddingVertical: 11,
+    paddingHorizontal: 13,
     borderRadius: 10,
-    marginTop: 20,
+    marginTop: 10,
   },
 
   saveButtonText: {
     color: '#FFFFFF',
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 
   historyTitle: {
-    fontSize: 21,
+    fontSize: 19,
     fontWeight: 'bold',
-    marginTop: 30,
-    marginBottom: 10,
+    marginTop: 22,
+    marginBottom: 8,
   },
 
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 30,
+    marginBottom: 22,
   },
 
   emptyText: {
@@ -761,41 +528,20 @@ const baseStyles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  historyGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   historyCard: {
+    width: '48.5%',
     backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 8,
     elevation: 2,
   },
 
-  historyDate: {
-    fontSize: 13,
-    color: '#2D6A4F',
-    fontWeight: '700',
-    backgroundColor: '#E7F2EA',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-
-  historyEggs: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-
-  historyDetails: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 5,
-  },
-
-  sizeDetails: {
-    fontSize: 14,
-    marginTop: 3,
-  },
+  historyDate: { fontSize: 9, color: '#9CA3AF', marginTop: 7 },
+  historyEggs: { fontSize: 16, fontWeight: 'bold', marginTop: 3 },
+  historyDetails: { fontSize: 11, color: '#6B7280', marginTop: 3 },
+  sizeDetails: { fontSize: 10, lineHeight: 14, marginTop: 4 },
   historyToggle: { alignSelf: 'center', paddingHorizontal: 18, paddingVertical: 10, marginBottom: 18 },
   historyToggleText: { color: '#2D6A4F', fontSize: 14, fontWeight: '700' },
 });

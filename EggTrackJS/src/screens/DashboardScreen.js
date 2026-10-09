@@ -83,6 +83,16 @@ export default function DashboardScreen({ navigation }) {
     lowStockItems.push('Jumbo');
   }
 
+  const renderStockAlert = () => lowStockItems.length === 0 ? null : (
+    <View style={styles.stockAlertSection}>
+      <Text style={styles.sectionTitle}>Stock Alert</Text>
+      <View style={[styles.alertCard, styles.lowStockAlertCard]}>
+        <Text style={[styles.alertTitle, styles.lowStockAlertTitle]}>! Low Stock Detected</Text>
+        <Text style={styles.alertText}>{lowStockItems.join(', ')} need attention.</Text>
+      </View>
+    </View>
+  );
+
   return (
     <ScrollView
       style={styles.container}
@@ -117,6 +127,8 @@ export default function DashboardScreen({ navigation }) {
           </Svg>
         </View>
       </View>
+
+      {renderStockAlert()}
 
       <Text style={styles.sectionTitle}>
         Overview
@@ -198,36 +210,6 @@ export default function DashboardScreen({ navigation }) {
 
       </View>
 
-      <Text style={styles.sectionTitle}>
-        Stock Alert
-      </Text>
-
-      <View style={[styles.alertCard, lowStockItems.length > 0 && styles.lowStockAlertCard]}>
-
-        {lowStockItems.length === 0 ? (
-          <>
-            <Text style={styles.alertTitle}>
-              Inventory is in good condition
-            </Text>
-
-            <Text style={styles.alertText}>
-              No egg size is currently at or below its configured threshold.
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={[styles.alertTitle, styles.lowStockAlertTitle]}>
-              ! Low Stock Detected
-            </Text>
-
-            <Text style={styles.alertText}>
-              {lowStockItems.join(', ')} need attention.
-            </Text>
-          </>
-        )}
-
-      </View>
-
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>
           Recent Sales
@@ -293,10 +275,10 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: 16,
-    marginTop: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 19,
-    borderRadius: 20,
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
     overflow: 'hidden',
   },
 
@@ -314,9 +296,9 @@ const baseStyles = StyleSheet.create({
   },
 
   sparkle: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -333,28 +315,28 @@ const baseStyles = StyleSheet.create({
 
   activityLabel: {
     color: '#536258',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     marginBottom: 2,
   },
 
   activityValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
   },
 
   subtitle: {
     fontSize: 12,
     color: '#6B7280',
-    marginTop: 6,
+    marginTop: 4,
   },
 
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     marginHorizontal: 20,
-    marginTop: 25,
-    marginBottom: 10,
+    marginTop: 18,
+    marginBottom: 8,
   },
 
   cardRow: {
@@ -385,25 +367,27 @@ const baseStyles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 13,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
 
   statusName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 
   statusValue: {
-    fontSize: 15,
+    fontSize: 14,
   },
+
+  stockAlertSection: { marginBottom: 8 },
 
   alertCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    padding: 18,
+    padding: 14,
     borderRadius: 12,
     elevation: 2,
   },
@@ -416,7 +400,7 @@ const baseStyles = StyleSheet.create({
   },
 
   alertTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 
@@ -425,7 +409,7 @@ const baseStyles = StyleSheet.create({
   },
 
   alertText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
     marginTop: 5,
     lineHeight: 20,
@@ -434,7 +418,7 @@ const baseStyles = StyleSheet.create({
   emptyCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    padding: 20,
+    padding: 16,
     borderRadius: 12,
   },
 
@@ -447,7 +431,7 @@ const baseStyles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
     marginBottom: 10,
-    padding: 16,
+    padding: 13,
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -455,12 +439,12 @@ const baseStyles = StyleSheet.create({
   },
 
   saleTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 
   saleDate: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
     marginTop: 4,
   },
@@ -470,17 +454,17 @@ const baseStyles = StyleSheet.create({
   },
 
   saleEggs: {
-    fontSize: 14,
+    fontSize: 13,
   },
 
   saleAmount: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
     marginTop: 3,
   },
 
   actions: {
     marginHorizontal: 20,
-    marginBottom: 30,
+    marginBottom: 22,
   },
 });

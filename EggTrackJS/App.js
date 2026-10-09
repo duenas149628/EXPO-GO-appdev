@@ -229,9 +229,10 @@ function MoreStackNavigator() {
       <MoreStack.Screen name="MoreHome" component={MoreScreen} options={{ title: 'More tools' }} />
       <MoreStack.Screen name="Ledger" component={LedgerScreen} options={{ title: 'Ledger' }} />
       <MoreStack.Screen name="Reports" component={ReportsScreen} options={{ title: 'Reports & Analytics' }} />
-      {role === 'owner' && (
-        <MoreStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-      )}
+      {role === 'owner' && <MoreStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />}
+      {role === 'owner' && <MoreStack.Screen name="EggThresholds" component={SettingsScreen} options={{ title: 'Egg Size Thresholds' }} />}
+      {role === 'owner' && <MoreStack.Screen name="SalePriceReferences" component={SettingsScreen} options={{ title: 'Sale Price References' }} />}
+      {role === 'owner' && <MoreStack.Screen name="StaffAccounts" component={SettingsScreen} options={{ title: 'Staff Accounts' }} />}
     </MoreStack.Navigator>
   );
 }

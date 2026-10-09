@@ -25,25 +25,25 @@ const baseStyles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    margin: 8,
-    padding: 18,
-    borderRadius: 12,
+    margin: 5,
+    padding: 13,
+    borderRadius: 10,
     elevation: 2,
   },
 
   label: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
   },
 
   value: {
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginTop: 8,
+    marginTop: 5,
   },
 
   unit: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#9CA3AF',
     marginTop: 2,
   },

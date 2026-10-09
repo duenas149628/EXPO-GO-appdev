@@ -13,20 +13,31 @@ const EGG_SIZES = [
   ['jumbo', 'Jumbo'],
 ];
 
-function summarizeByPeriod(records, period) {
+function summarizeByPeriod(records, period, metric = 'eggs') {
   const totals = {};
   records.forEach(record => {
     if (typeof record.date !== 'string') return;
-    const key = period === 'monthly' ? record.date.slice(0, 7) : record.date.slice(0, 10);
+    const dateKey = record.date.slice(0, 10);
+    let key = dateKey;
+    if (period === 'monthly') key = dateKey.slice(0, 7);
+    if (period === 'weekly') {
+      const [year, month, day] = dateKey.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+      key = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+    }
     if (!/^\d{4}-\d{2}(-\d{2})?$/.test(key)) return;
-    totals[key] = (totals[key] || 0) + Number(record.totalEggs || 0);
+    const eggs = Number(record.totalEggs || 0);
+    totals[key] = (totals[key] || 0) + (metric === 'trays' ? eggs / 30 : eggs);
   });
 
-  const keys = Object.keys(totals).sort().slice(period === 'monthly' ? -12 : -14);
+  const keys = Object.keys(totals).sort().slice(period === 'monthly' ? -12 : period === 'weekly' ? -12 : -14);
   return {
     labels: keys.map(key => {
       const [year, month, day] = key.split('-');
       if (period === 'daily') return `${month}/${day}`;
+      if (period === 'weekly') return new Date(Number(year), Number(month) - 1, Number(day))
+        .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       return new Date(Number(year), Number(month) - 1, 1)
         .toLocaleDateString(undefined, { month: 'short' }) + ` '${year.slice(-2)}`;
     }),
@@ -37,14 +48,14 @@ function summarizeByPeriod(records, period) {
 function PeriodPicker({ value, onChange, styles }) {
   return (
     <View style={styles.periodPicker}>
-      {['daily', 'monthly'].map(period => (
+      {['daily', 'weekly', 'monthly'].map(period => (
         <Text
           key={period}
           accessibilityRole="button"
           onPress={() => onChange(period)}
           style={[styles.periodOption, value === period && styles.periodOptionActive]}
         >
-          {period === 'daily' ? 'Daily' : 'Monthly'}
+          {period === 'daily' ? 'Daily' : period === 'weekly' ? 'Weekly' : 'Monthly'}
         </Text>
       ))}
     </View>
@@ -58,6 +69,7 @@ export default function ReportsScreen() {
   const { width } = useWindowDimensions();
   const [productionPeriod, setProductionPeriod] = useState('daily');
   const [salesPeriod, setSalesPeriod] = useState('daily');
+  const [salesMetric, setSalesMetric] = useState('eggs');
 
   const inventoryTotal = useMemo(
     () => EGG_SIZES.reduce((sum, [key]) => sum + Number(inventory[key] || 0), 0),
@@ -88,8 +100,8 @@ export default function ReportsScreen() {
     [productions, productionPeriod]
   );
   const salesSummary = useMemo(
-    () => summarizeByPeriod(sales, salesPeriod),
-    [sales, salesPeriod]
+    () => summarizeByPeriod(sales, salesPeriod, salesMetric),
+    [sales, salesPeriod, salesMetric]
   );
   const chartWidth = Math.max(280, width - 68);
   const chartColor = isDark ? 'rgba(139, 211, 165, 1)' : 'rgba(45, 106, 79, 1)';
@@ -112,14 +124,30 @@ export default function ReportsScreen() {
     { label: 'REVENUE', value: `₱${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, unit: 'total sales' },
   ], [inventoryTotal, totalEggsProduced, totalEggsSold, totalRevenue]);
 
-  const renderChart = (title, caption, summary, period, setPeriod, emptyText) => (
+  const renderChart = (title, caption, summary, period, setPeriod, emptyText, metric, setMetric) => (
     <View style={styles.chartCard}>
       <View style={styles.chartHeader}>
         <View style={styles.chartTitleGroup}>
           <Text style={styles.chartTitle}>{title}</Text>
           <Text style={styles.chartCaption}>{caption}</Text>
         </View>
+      </View>
+      <View style={styles.chartControls}>
         <PeriodPicker value={period} onChange={setPeriod} styles={styles} />
+        {setMetric && (
+          <View style={styles.periodPicker}>
+            {['eggs', 'trays'].map(unit => (
+              <Text
+                key={unit}
+                accessibilityRole="button"
+                onPress={() => setMetric(unit)}
+                style={[styles.periodOption, metric === unit && styles.periodOptionActive]}
+              >
+                {unit === 'eggs' ? 'Eggs' : 'Trays'}
+              </Text>
+            ))}
+          </View>
+        )}
       </View>
       {summary.values.length === 0 ? (
         <View style={styles.emptyChart}><Text style={styles.emptyText}>{emptyText}</Text></View>
@@ -128,7 +156,7 @@ export default function ReportsScreen() {
           data={{ labels: summary.labels, datasets: [{ data: summary.values, color: () => chartColor }] }}
           width={chartWidth}
           height={230}
-          chartConfig={chartConfig}
+          chartConfig={{ ...chartConfig, decimalPlaces: metric === 'trays' ? 1 : 0 }}
           bezier
           fromZero
           withShadow={false}
@@ -159,8 +187,8 @@ export default function ReportsScreen() {
         ))}
       </View>
 
-      {renderChart('Egg harvest', 'Eggs collected', productionSummary, productionPeriod, setProductionPeriod, 'No harvest data for this period yet.')}
-      {renderChart('Egg sales', 'Eggs sold', salesSummary, salesPeriod, setSalesPeriod, 'No sales data for this period yet.')}
+      {renderChart('Egg harvest', 'Eggs collected', productionSummary, productionPeriod, setProductionPeriod, 'No harvest data for this period yet.', 'eggs')}
+      {renderChart('Egg sales', salesMetric === 'trays' ? 'Trays sold · 30 eggs per tray' : 'Eggs sold', salesSummary, salesPeriod, setSalesPeriod, 'No sales data for this period yet.', salesMetric, setSalesMetric)}
 
       <Text style={styles.sectionTitle}>Harvest by egg size</Text>
       <View style={styles.sizeCard}>
@@ -192,25 +220,26 @@ const baseStyles = StyleSheet.create({
   title: { color: '#111827', fontSize: 27, fontWeight: '800', marginTop: 5 },
   subtitle: { color: '#6B7280', fontSize: 14, marginTop: 5, marginBottom: 18 },
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5, marginBottom: 8 },
-  summaryCard: { width: '48%', flexGrow: 1, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 15, padding: 14, margin: 4 },
-  summaryLabel: { color: '#6B7280', fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
-  summaryValue: { color: '#111827', fontSize: 22, fontWeight: '800', marginTop: 7 },
-  summaryUnit: { color: '#9CA3AF', fontSize: 11, marginTop: 2 },
+  summaryCard: { width: '47%', flexGrow: 1, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 11, paddingHorizontal: 10, paddingVertical: 8, margin: 4 },
+  summaryLabel: { color: '#6B7280', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
+  summaryValue: { color: '#111827', fontSize: 17, fontWeight: '800', marginTop: 3 },
+  summaryUnit: { color: '#9CA3AF', fontSize: 9, marginTop: 1 },
   chartCard: { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderWidth: 1, borderRadius: 17, padding: 12, marginBottom: 13, overflow: 'hidden' },
-  chartHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  chartHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  chartControls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   chartTitleGroup: { flexShrink: 1, marginRight: 7 },
   chartTitle: { color: '#111827', fontSize: 17, fontWeight: '800' },
   chartCaption: { color: '#6B7280', fontSize: 12, marginTop: 3 },
   periodPicker: { flexDirection: 'row', padding: 3, borderRadius: 9, backgroundColor: '#F9FAFB' },
-  periodOption: { color: '#6B7280', fontSize: 11, fontWeight: '700', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 7, overflow: 'hidden' },
+  periodOption: { color: '#6B7280', fontSize: 10, fontWeight: '700', paddingHorizontal: 7, paddingVertical: 6, borderRadius: 7, overflow: 'hidden' },
   periodOptionActive: { color: '#FFFFFF', backgroundColor: '#111827' },
   chart: { borderRadius: 12, marginLeft: -9 },
   emptyChart: { height: 180, alignItems: 'center', justifyContent: 'center' },
   emptyText: { color: '#6B7280', fontSize: 13, textAlign: 'center' },
-  sectionTitle: { color: '#111827', fontSize: 18, fontWeight: '800', marginTop: 12, marginBottom: 9 },
-  sizeCard: { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderWidth: 1, borderRadius: 15, paddingHorizontal: 15, marginBottom: 8 },
-  sizeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  sectionTitle: { color: '#111827', fontSize: 16, fontWeight: '800', marginTop: 9, marginBottom: 6 },
+  sizeCard: { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderWidth: 1, borderRadius: 11, paddingHorizontal: 10, marginBottom: 6 },
+  sizeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   lastSizeRow: { borderBottomWidth: 0 },
-  sizeName: { color: '#536258', fontSize: 14 },
-  sizeValue: { color: '#111827', fontSize: 14, fontWeight: '700' },
+  sizeName: { color: '#536258', fontSize: 12 },
+  sizeValue: { color: '#111827', fontSize: 12, fontWeight: '700' },
 });

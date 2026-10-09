@@ -14,7 +14,7 @@ export default function MoreScreen({ navigation }) {
   const { role } = useContext(EggContext);
   const styles = useThemedStyles(baseStyles);
   const items = role === 'owner'
-    ? [...MENU_ITEMS, { route: 'Settings', title: 'Settings', description: 'Manage low-stock thresholds', mark: '03' }]
+    ? [...MENU_ITEMS, { route: 'Settings', title: 'Settings', description: 'Configure thresholds, sale prices, and staff accounts', mark: '03' }]
     : MENU_ITEMS;
 
   const handleLogout = async () => {

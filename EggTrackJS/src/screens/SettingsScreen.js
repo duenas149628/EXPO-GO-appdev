@@ -31,7 +31,7 @@ const PRICE_SIZE_OPTIONS = [
   ['jumbo', 'Jumbo'],
 ];
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ navigation, route }) {
   const styles = useThemedStyles(baseStyles);
   const {
     thresholds,
@@ -48,6 +48,7 @@ export default function SettingsScreen() {
   const [showStaffPassword, setShowStaffPassword] = useState(false);
   const [staffAccounts, setStaffAccounts] = useState([]);
   const [isManagingStaff, setIsManagingStaff] = useState(false);
+  const section = route?.name || 'Settings';
 
   const refreshStaff = useCallback(async () => {
     if (role !== 'owner') return;
@@ -262,20 +263,48 @@ export default function SettingsScreen() {
     );
   };
 
+  if (section === 'Settings') {
+    const settingItems = [
+      { route: 'EggThresholds', title: 'Egg Size Thresholds', description: 'Set low-stock levels for each egg size.', mark: '01' },
+      { route: 'SalePriceReferences', title: 'Sale Price References', description: 'Configure suggested prices per egg and per tray.', mark: '02' },
+      { route: 'StaffAccounts', title: 'Staff Accounts', description: 'Create and manage staff sign-ins.', mark: '03' },
+    ];
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.description}>Choose what you want to configure.</Text>
+        {settingItems.map(item => (
+          <TouchableOpacity key={item.route} style={styles.settingsMenuCard} onPress={() => navigation.navigate(item.route)} accessibilityRole="button">
+            <View style={styles.settingsMenuMark}><Text style={styles.settingsMenuMarkText}>{item.mark}</Text></View>
+            <View style={styles.settingsMenuCopy}>
+              <Text style={styles.settingsMenuTitle}>{item.title}</Text>
+              <Text style={styles.settingsMenuDescription}>{item.description}</Text>
+            </View>
+            <Text style={styles.settingsMenuArrow}>›</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    );
+  }
+
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
 
         <Text style={styles.title}>
-          Settings
+          {section === 'EggThresholds' ? 'Egg Size Thresholds' : section === 'SalePriceReferences' ? 'Sale Price References' : 'Staff Accounts'}
         </Text>
 
         <Text style={styles.description}>
-          Configure the minimum inventory level for each egg size.
+          {section === 'EggThresholds'
+            ? 'Configure the low-stock level for each egg size.'
+            : section === 'SalePriceReferences'
+              ? 'Set suggested prices per egg and per tray. Staff and owners can still adjust each sale price.'
+              : 'Create and manage sign-ins for staff in this business.'}
         </Text>
 
-
+        {section === 'EggThresholds' && <>
         <View style={styles.infoCard}>
 
           <Text style={styles.infoTitle}>
@@ -380,11 +409,10 @@ export default function SettingsScreen() {
             Save Thresholds
           </Text>
         </TouchableOpacity>
+        </>}
 
-        {role === 'owner' && (
+        {section === 'SalePriceReferences' && role === 'owner' && (
           <View style={styles.staffSection}>
-            <Text style={styles.sectionTitle}>Sale Price References</Text>
-            <Text style={styles.description}>Set suggested prices per egg and per tray. These appear as editable defaults when recording a sale.</Text>
             <Text style={styles.label}>Default price per egg (PHP)</Text>
             {PRICE_SIZE_OPTIONS.map(([key, label]) => (
               <View key={`egg-${key}`} style={styles.priceSettingRow}>
@@ -417,10 +445,8 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        {role === 'owner' && (
+        {section === 'StaffAccounts' && role === 'owner' && (
           <View style={styles.staffSection}>
-            <Text style={styles.sectionTitle}>Staff accounts</Text>
-            <Text style={styles.description}>Create individual sign-ins for people in this business. Staff accounts are linked to this workspace automatically.</Text>
             <TextInput style={styles.input} value={staffName} onChangeText={setStaffName} placeholder="Staff member name" placeholderTextColor="#738078" />
             <TextInput style={styles.input} value={staffEmail} onChangeText={setStaffEmail} placeholder="Staff email" placeholderTextColor="#738078" keyboardType="email-address" autoCapitalize="none" />
             <View style={styles.staffPasswordRow}>
@@ -447,7 +473,7 @@ export default function SettingsScreen() {
         )}
 
 
-        <View style={styles.currentCard}>
+        {section === 'EggThresholds' && <View style={styles.currentCard}>
 
           <Text style={styles.currentTitle}>
             Current Thresholds
@@ -477,7 +503,7 @@ export default function SettingsScreen() {
             Jumbo: {thresholds.jumbo}
           </Text>
 
-        </View>
+        </View>}
 
 
       </View>
@@ -493,51 +519,51 @@ const baseStyles = StyleSheet.create({
   },
 
   content: {
-    padding: 20,
+    padding: 16,
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 23,
     fontWeight: 'bold',
   },
 
   description: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
-    marginTop: 5,
-    marginBottom: 20,
+    marginTop: 4,
+    marginBottom: 14,
   },
 
   infoCard: {
     backgroundColor: '#FFFFFF',
-    padding: 18,
+    padding: 14,
     borderRadius: 12,
     elevation: 2,
   },
 
   infoTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 
   infoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
-    marginTop: 8,
-    lineHeight: 20,
+    marginTop: 5,
+    lineHeight: 17,
   },
 
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 25,
-    marginBottom: 15,
+    marginTop: 18,
+    marginBottom: 10,
   },
 
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 5,
   },
 
   input: {
@@ -545,55 +571,64 @@ const baseStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 10,
-    padding: 14,
-    fontSize: 17,
-    marginBottom: 18,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginBottom: 12,
   },
 
   saveButton: {
     backgroundColor: '#111827',
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 10,
-    marginTop: 5,
+    marginTop: 3,
   },
 
   saveButtonText: {
     color: '#FFFFFF',
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 
   currentCard: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
+    padding: 15,
     borderRadius: 12,
-    marginTop: 25,
-    marginBottom: 20,
+    marginTop: 18,
+    marginBottom: 14,
     elevation: 2,
   },
 
   currentTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 8,
   },
 
   currentText: {
-    fontSize: 15,
-    marginVertical: 4,
+    fontSize: 13,
+    marginVertical: 2,
   },
 
-  staffSection: { marginTop: 20, marginBottom: 20 },
-  priceSettingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  priceSettingLabel: { flex: 1, color: '#374151', fontWeight: '600' },
-  priceSettingInput: { width: 120, backgroundColor: '#FFFFFF', color: '#111827', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: '#D1D5DB', textAlign: 'right' },
-  staffRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E2E9E3' },
+  staffSection: { marginTop: 15, marginBottom: 15 },
+  priceSettingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  priceSettingLabel: { flex: 1, color: '#374151', fontWeight: '600', fontSize: 13 },
+  priceSettingInput: { width: 104, backgroundColor: '#FFFFFF', color: '#111827', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 8, borderWidth: 1, borderColor: '#D1D5DB', textAlign: 'right', fontSize: 14 },
+  staffRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E2E9E3' },
   staffDetails: { flex: 1 },
-  staffPasswordRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#D8E0D8', paddingHorizontal: 12, marginBottom: 10 },
-  staffPasswordInput: { flex: 1, color: '#213329', paddingVertical: 13 },
-  staffPasswordToggle: { color: '#536258', fontSize: 13, fontWeight: '700', paddingVertical: 8, paddingLeft: 10 },
-  staffName: { fontSize: 15, fontWeight: '700' },
-  disableText: { color: '#C84D4D', fontWeight: '700', padding: 8 },
-  enableText: { color: '#39834A', fontWeight: '700', padding: 8 },
+  staffPasswordRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#D8E0D8', paddingHorizontal: 10, marginBottom: 8 },
+  staffPasswordInput: { flex: 1, color: '#213329', paddingVertical: 9, fontSize: 14 },
+  staffPasswordToggle: { color: '#536258', fontSize: 12, fontWeight: '700', paddingVertical: 6, paddingLeft: 8 },
+  staffName: { fontSize: 13, fontWeight: '700' },
+  disableText: { color: '#C84D4D', fontWeight: '700', padding: 6, fontSize: 12 },
+  enableText: { color: '#39834A', fontWeight: '700', padding: 6, fontSize: 12 },
+  settingsMenuCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderWidth: 1, borderRadius: 12, padding: 13, marginBottom: 9 },
+  settingsMenuMark: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB' },
+  settingsMenuMarkText: { color: '#6B7280', fontSize: 10, fontWeight: '800' },
+  settingsMenuCopy: { flex: 1, marginLeft: 10 },
+  settingsMenuTitle: { fontSize: 14, fontWeight: '700' },
+  settingsMenuDescription: { color: '#6B7280', fontSize: 11, marginTop: 3 },
+  settingsMenuArrow: { color: '#9CA3AF', fontSize: 22, marginLeft: 8 },
 });

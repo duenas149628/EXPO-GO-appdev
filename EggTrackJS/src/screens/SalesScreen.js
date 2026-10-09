@@ -53,7 +53,6 @@ const emptyValues = {
   jumbo: '',
 };
 
-const EGG_UNITS = ['Eggs', 'Trays'];
 const INITIAL_HISTORY_COUNT = 3;
 const priceGroupToInputs = group => Object.fromEntries(
   EGG_SIZES.map(({ key }) => [key, Number(group[key]).toFixed(2)])
@@ -87,19 +86,12 @@ export default function SalesScreen() {
   const [inputMode, setInputMode] =
     useState('eggs');
 
-  const [selectedSizeKey, setSelectedSizeKey] =
-    useState(EGG_SIZES[0].key);
-
-  const [isSizeDropdownOpen, setIsSizeDropdownOpen] =
-    useState(false);
-
   const [eggQuantities, setEggQuantities] =
     useState(emptyValues);
 
   const [trayQuantities, setTrayQuantities] =
     useState(emptyValues);
 
-  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
   const quantities = inputMode === 'trays' ? trayQuantities : eggQuantities;
 
   const [eggPrices, setEggPrices] =
@@ -632,15 +624,6 @@ export default function SalesScreen() {
   const preview =
     calculateSale();
 
-  const selectedSize = EGG_SIZES.find(
-    size => size.key === selectedSizeKey
-  ) || EGG_SIZES[0];
-  const selectedSizeKeyValue = selectedSize.key;
-  const selectedQuantity = getNumber(quantities[selectedSizeKeyValue]);
-  const selectedPrice = getPriceForSize(selectedSizeKeyValue);
-  const selectedAmount = selectedQuantity * selectedPrice;
-
-
   // =====================================================
   // RENDER
   // =====================================================
@@ -664,39 +647,25 @@ export default function SalesScreen() {
       </Text>
 
 
-      <Text style={styles.inputLabel}>Unit</Text>
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityState={{ expanded: isUnitDropdownOpen }}
-        style={styles.sizeDropdownButton}
-        onPress={() => setIsUnitDropdownOpen(open => !open)}
-      >
-        <Text style={styles.sizeDropdownText}>{inputMode === 'trays' ? 'Trays' : 'Eggs'}</Text>
-        <Text style={styles.dropdownChevron}>{isUnitDropdownOpen ? '^' : 'v'}</Text>
-      </TouchableOpacity>
-      {isUnitDropdownOpen && (
-        <View style={styles.sizeDropdownMenu}>
-          {EGG_UNITS.map(unit => {
-            const unitMode = unit.toLowerCase();
-            const selected = inputMode === unitMode;
-            return (
-              <TouchableOpacity
-                key={unit}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                style={[styles.sizeDropdownOption, selected && styles.selectedSizeDropdownOption]}
-                onPress={() => {
-                  setInputMode(unitMode);
-                  setIsUnitDropdownOpen(false);
-                }}
-              >
-                <Text style={[styles.sizeDropdownOptionText, selected && styles.selectedSizeDropdownOptionText]}>{unit}</Text>
-                <Text style={styles.sizeDropdownAvailability}>{unit === 'Trays' ? '1 tray = 30 eggs' : 'Individual eggs'}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
+      <Text style={styles.unitSectionTitle}>Recording Method</Text>
+      <View style={styles.unitToggleRow}>
+        {['eggs', 'trays'].map(unit => {
+          const selected = inputMode === unit;
+          return (
+            <TouchableOpacity
+              key={unit}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              style={[styles.unitButton, selected && styles.activeUnitButton]}
+              onPress={() => setInputMode(unit)}
+            >
+              <Text style={[styles.unitButtonText, selected && styles.activeUnitButtonText]}>
+                {unit === 'eggs' ? 'Eggs' : 'Trays'}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
 
       <Text
@@ -712,179 +681,43 @@ export default function SalesScreen() {
 
       {/* EGG SIZE INPUTS */}
 
-      <Text style={styles.inputLabel}>Egg Size</Text>
-
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityState={{ expanded: isSizeDropdownOpen }}
-        style={styles.sizeDropdownButton}
-        onPress={() => setIsSizeDropdownOpen(open => !open)}
-      >
-        <Text style={styles.sizeDropdownText}>{selectedSize.label}</Text>
-        <Text style={styles.dropdownChevron}>{isSizeDropdownOpen ? '^' : 'v'}</Text>
-      </TouchableOpacity>
-
-      {isSizeDropdownOpen && (
-        <View style={styles.sizeDropdownMenu}>
-          {EGG_SIZES.map(size => (
-            <TouchableOpacity
-              key={size.key}
-              accessibilityRole="button"
-              accessibilityState={{ selected: size.key === selectedSizeKey }}
-              style={[
-                styles.sizeDropdownOption,
-                size.key === selectedSizeKey && styles.selectedSizeDropdownOption,
-              ]}
-              onPress={() => {
-                setSelectedSizeKey(size.key);
-                setIsSizeDropdownOpen(false);
-              }}
-            >
-              <Text
-                style={[
-                  styles.sizeDropdownOptionText,
-                  size.key === selectedSizeKey && styles.selectedSizeDropdownOptionText,
-                ]}
-              >
-                {size.label}
-              </Text>
-              <Text style={styles.sizeDropdownAvailability}>
-                {inventory[size.key]} eggs
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.sizeCard}>
-
-              <Text
-                style={
-                  styles.sizeTitle
-                }
-              >
-                {selectedSize.label}
-              </Text>
-
-
-              <Text
-                style={
-                  styles.available
-                }
-              >
-                Available:{' '}
-                {inventory[selectedSizeKeyValue]} eggs
-              </Text>
-
-
-              <Text
-                style={
-                  styles.inputLabel
-                }
-              >
-                {inputMode === 'trays'
-                  ? 'Number of Trays'
-                  : 'Number of Eggs'}
-              </Text>
-
-
+      <Text style={styles.inputLabel}>Egg Sizes</Text>
+      <View style={styles.sizeGrid}>
+        {EGG_SIZES.map(size => {
+          const quantity = getNumber(quantities[size.key]);
+          const amount = quantity * getPriceForSize(size.key);
+          return (
+            <View key={size.key} style={styles.sizeCard}>
+              <Text style={styles.sizeTitle}>{size.label}</Text>
+              <Text style={styles.available}>{inventory[size.key]} eggs available</Text>
+              <Text style={styles.inputLabel}>{inputMode === 'trays' ? 'Trays' : 'Eggs'}</Text>
               <TextInput
-                style={
-                  [styles.input, { color: colors.text }]
-                }
-
+                style={[styles.input, { color: colors.text }]}
+                value={quantities[size.key]}
+                onChangeText={value => updateValue(size.key, value.replace(/[^0-9]/g, ''))}
                 placeholder="0"
                 placeholderTextColor={colors.muted}
                 selectionColor={colors.primary}
-
                 keyboardType="numeric"
-
-                value={
-                  quantities[selectedSizeKeyValue]
-                }
-
-                onChangeText={
-                  value =>
-                    updateValue(
-                      selectedSizeKeyValue,
-                      value.replace(
-                        /[^0-9]/g,
-                        ''
-                      )
-                    )
-                }
               />
-
-
-              <Text
-                style={
-                  styles.inputLabel
-                }
-              >
-                {inputMode === 'trays'
-                  ? 'Price per Tray (₱)'
-                  : 'Price per Egg (₱)'}
-              </Text>
-
-
+              <Text style={styles.inputLabel}>{inputMode === 'trays' ? 'Price / tray (PHP)' : 'Price / egg (PHP)'}</Text>
               <TextInput
-                style={
-                  [styles.input, { color: colors.text }]
-                }
-
+                style={[styles.input, { color: colors.text }]}
+                value={prices[size.key]}
+                onChangeText={value => updatePrice(size.key, value.replace(/[^0-9.]/g, ''))}
                 placeholder="0.00"
                 placeholderTextColor={colors.muted}
                 selectionColor={colors.primary}
-
                 keyboardType="decimal-pad"
-
-                value={
-                  prices[selectedSizeKeyValue]
-                }
-
-                onChangeText={
-                  value =>
-                    updatePrice(
-                      selectedSizeKeyValue,
-                      value.replace(
-                        /[^0-9.]/g,
-                        ''
-                      )
-                    )
-                }
               />
-
-
-              {inputMode ===
-                'trays' &&
-                selectedQuantity > 0 && (
-
-                  <Text
-                    style={
-                      styles.conversionText
-                    }
-                  >
-                    {selectedQuantity} tray(s)
-                    {' = '}
-                    {selectedQuantity * 30}
-                    {' eggs'}
-                  </Text>
-
-                )}
-
-
-              <Text
-                style={
-                  styles.amountText
-                }
-              >
-                Amount: ₱
-                {selectedAmount.toFixed(2)}
-              </Text>
-
+              {inputMode === 'trays' && quantity > 0 && (
+                <Text style={styles.conversionText}>{quantity} {quantity === 1 ? 'tray' : 'trays'} = {quantity * 30} eggs</Text>
+              )}
+              <Text style={styles.amountText}>Amount: PHP {amount.toFixed(2)}</Text>
+            </View>
+          );
+        })}
       </View>
-
-
       {/* SALE SUMMARY */}
 
       <View
@@ -1002,8 +835,8 @@ export default function SalesScreen() {
         </Text>
 
       ) : (
-
-        sales.slice(0, showAllSales ? sales.length : INITIAL_HISTORY_COUNT).map(
+        <View style={styles.historyGrid}>
+        {sales.slice(0, showAllSales ? sales.length : INITIAL_HISTORY_COUNT).map(
           (
             sale,
             index
@@ -1027,14 +860,6 @@ export default function SalesScreen() {
               }
             >
 
-              <Text
-                style={
-                  styles.historyDate
-                }
-              >
-                {formatHistoryDate(sale.date)}
-              </Text>
-
               {sale.pendingSync && (
                 <Text style={styles.pendingSyncText}>
                   {sale.pendingSyncError
@@ -1044,18 +869,17 @@ export default function SalesScreen() {
               )}
 
 
-              <Text style={styles.historyText}>
-                Egg Size: {sale.eggSizes?.map(size => size.label || size.key).join(', ')
+              <View style={styles.historyEggSizesCard}>
+                <Text style={styles.historyEggSizesLabel}>Egg sizes sold</Text>
+                <Text style={styles.historyEggSizes}>
+                  {sale.eggSizes?.map(size => size.label || size.key).join(', ')
                   || EGG_SIZES.filter(size => Number(sale[size.key] || 0) > 0).map(size => size.label).join(', ')
                   || 'Not recorded'}
-              </Text>
+                </Text>
+              </View>
 
-              <Text
-                style={
-                  styles.historyText
-                }
-              >
-                Quantity: {sale.quantity ?? Object.values(sale.quantities || {}).reduce((sum, value) => sum + Number(value || 0), 0)}{' '}
+              <Text style={styles.historySaleQuantity}>
+                Sold: {sale.quantity ?? Object.values(sale.quantities || {}).reduce((sum, value) => sum + Number(value || 0), 0)}{' '}
                 {sale.unit || (sale.inputMode === 'trays' ? 'Trays' : 'Eggs')}
               </Text>
 
@@ -1075,11 +899,15 @@ export default function SalesScreen() {
                 ).toFixed(2)}
               </Text>
 
+              <Text style={styles.historyDate}>
+                {formatHistoryDate(sale.date)}
+              </Text>
 
             </View>
 
           )
-        )
+        )}
+        </View>
 
       )}
       {sales.length > INITIAL_HISTORY_COUNT && (
@@ -1105,111 +933,53 @@ const baseStyles = StyleSheet.create({
   },
 
   content: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: 14,
+    paddingBottom: 30,
   },
 
   title: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: 'bold',
     marginBottom: 5,
   },
 
   subtitle: {
     color: '#6B7280',
-    marginBottom: 15,
+    marginBottom: 12,
   },
 
   modeDescription: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 15,
-  },
-
-  sizeDropdownButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    marginBottom: 10,
-  },
-
-  sizeDropdownText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  dropdownChevron: {
-    color: '#6B7280',
     fontSize: 12,
-  },
-
-  sizeDropdownMenu: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-
-  sizeDropdownOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-
-  selectedSizeDropdownOption: {
-    backgroundColor: '#E7F2EA',
-  },
-
-  sizeDropdownOptionText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-
-  selectedSizeDropdownOptionText: {
-    color: '#2D6A4F',
-    fontWeight: '700',
-  },
-
-  sizeDropdownAvailability: {
     color: '#6B7280',
-    fontSize: 13,
+    marginBottom: 12,
   },
 
+  sizeGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   sizeCard: {
+    width: '48.5%',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 8,
     elevation: 2,
   },
 
   sizeTitle: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: 'bold',
     marginBottom: 4,
   },
 
   available: {
     color: '#6B7280',
-    marginBottom: 12,
+    fontSize: 10,
+    marginBottom: 7,
   },
 
   inputLabel: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 3,
     color: '#374151',
   },
 
@@ -1218,9 +988,9 @@ const baseStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
-    padding: 11,
-    marginBottom: 10,
-    fontSize: 16,
+    padding: 7,
+    marginBottom: 6,
+    fontSize: 14,
   },
 
   conversionText: {
@@ -1229,55 +999,55 @@ const baseStyles = StyleSheet.create({
   },
 
   amountText: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
     marginTop: 5,
   },
 
   summaryCard: {
     backgroundColor: '#FFFFFF',
-    padding: 18,
+    padding: 14,
     borderRadius: 12,
     marginTop: 5,
-    marginBottom: 15,
+    marginBottom: 12,
     elevation: 2,
   },
 
   summaryTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
   summaryText: {
-    fontSize: 16,
-    marginBottom: 5,
+    fontSize: 14,
+    marginBottom: 4,
   },
 
   totalAmount: {
-    fontSize: 21,
+    fontSize: 19,
     fontWeight: 'bold',
     marginTop: 8,
   },
 
   saveButton: {
     backgroundColor: '#111827',
-    padding: 16,
+    padding: 13,
     borderRadius: 10,
     alignItems: 'center',
-    marginBottom: 25,
+    marginBottom: 20,
   },
 
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 
   historyTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
   emptyText: {
@@ -1285,30 +1055,39 @@ const baseStyles = StyleSheet.create({
     marginBottom: 20,
   },
 
+  historyGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   historyCard: {
+    width: '48.5%',
     backgroundColor: '#FFFFFF',
-    padding: 15,
+    padding: 10,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 8,
     elevation: 1,
   },
 
+  unitToggleRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
+  unitSectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
+  unitButton: { flex: 1, alignItems: 'center', padding: 10, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10, backgroundColor: '#F9FAFB' },
+  activeUnitButton: { backgroundColor: '#111827', borderColor: '#111827' },
+  unitButtonText: { color: '#374151', fontSize: 14, fontWeight: '700' },
+  activeUnitButtonText: { color: '#FFFFFF' },
+
   historyDate: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2D6A4F',
-    backgroundColor: '#E7F2EA',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 7,
   },
 
   historyText: {
     color: '#4B5563',
+    fontSize: 11,
     marginTop: 2,
   },
+
+  historyEggSizesCard: { paddingVertical: 2, marginTop: 2, marginBottom: 4 },
+  historyEggSizesLabel: { color: '#2D6A4F', fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  historyEggSizes: { color: '#111827', fontSize: 12, fontWeight: '700', marginTop: 2 },
+  historySaleQuantity: { color: '#111827', fontSize: 14, fontWeight: '800', marginTop: 3, marginBottom: 3 },
 
   pendingSyncText: {
     fontSize: 12,
